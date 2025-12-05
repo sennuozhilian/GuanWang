@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faChevronLeft, faChevronRight, 
   faBrain, faShieldAlt, faBroom, faGraduationCap,
-  faMapMarkerAlt, faSecurity, faRobot, faStar,
+  faMapMarkerAlt, faRobot, faStar,
   faCogs, faWifi, faEye, faHandshake
 } from '@fortawesome/free-solid-svg-icons';
 
