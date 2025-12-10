@@ -30,51 +30,7 @@ interface FilterOption {
 
 // 机器人案例数据（每个分类4个案例，总计20个）
 const cases: CaseItem[] = [
-  // 人形表演机器人 (4个)
-  {
-    id: 1,
-    name: '文旅景区人形表演机器人',
-    category: 'performance',
-    categoryName: '人形表演机器人',
-    image: 'https://picsum.photos/id/119/800/500',
-    description: '为某5A级文旅景区部署10台人形表演机器人，搭载精准律动控制与仿生关节设计，每日完成8场主题舞蹈表演，游客体验评分提升40%',
-    highlight: ['16自由度仿生关节', '多机协同编队', '自定义动作编程', '8小时续航'],
-    client: '某文旅景区运营公司',
-    delay: '0s'
-  },
-  {
-    id: 2,
-    name: '主题乐园人形机器人互动表演',
-    category: 'performance',
-    categoryName: '人形表演机器人',
-    image: 'https://picsum.photos/id/141/800/500',
-    description: '为主题乐园定制20台定制化人形表演机器人，结合乐园IP打造专属舞蹈和互动节目，节假日游客接待量提升25%',
-    highlight: ['IP定制动作', '观众互动感应', '防水防尘设计', '快速换装'],
-    client: '某主题乐园集团',
-    delay: '0.1s'
-  },
-  {
-    id: 3,
-    name: '商业综合体人形迎宾表演机器人',
-    category: 'performance',
-    categoryName: '人形表演机器人',
-    image: 'https://picsum.photos/id/177/800/500',
-    description: '为高端商业综合体部署8台人形迎宾表演机器人，兼具迎宾接待和小型舞台表演功能，商场人气提升30%',
-    highlight: ['语音交互迎宾', '场景化表演', '客流引导', '自动充电'],
-    client: '某商业地产集团',
-    delay: '0.2s'
-  },
-  {
-    id: 4,
-    name: '大型展会人形表演机器人',
-    category: 'performance',
-    categoryName: '人形表演机器人',
-    image: 'https://picsum.photos/id/183/800/500',
-    description: '为国际科技展会定制6台人形表演机器人，展示前沿机器人技术，吸引观展人数提升50%，品牌曝光度显著增加',
-    highlight: ['科技感动作编排', '多语言解说', '展台引流', '远程控制'],
-    client: '某会展服务公司',
-    delay: '0.3s'
-  },
+ 
 
   // 教育智能机器人 (4个)
   {
@@ -82,7 +38,7 @@ const cases: CaseItem[] = [
     name: '中小学智能教育机器人教室',
     category: 'education',
     categoryName: '教育智能机器人',
-    image: 'https://picsum.photos/id/20/800/500',
+    image: '/images/edurobot/case1.png',
     description: '为某重点小学打造智能机器人教室，配备30台教育智能机器人，支持互动教学、编程学习和AI问答，学生编程兴趣提升65%',
     highlight: ['AI智能问答', '图形化编程', '多学科适配', '学情数据分析'],
     client: '某市教育局装备中心',
@@ -93,8 +49,8 @@ const cases: CaseItem[] = [
     name: '职业院校机器人教学实训基地',
     category: 'education',
     categoryName: '教育智能机器人',
-    image: 'https://picsum.photos/id/28/800/500',
-    description: '为职业院校建设机器人教学实训基地，配备40台教育智能机器人，覆盖编程、控制、维护全流程教学，实训效率提升70%',
+    image: '/images/edurobot/case2.png',
+    description: '为某职业院校建设机器人教学实训基地，配备40台教育智能机器人，覆盖编程、控制、维护全流程教学，实训效率提升70%',
     highlight: ['多人协作学习', '故障模拟训练', '校企课程共建', '证书考核适配'],
     client: '某职业技术学院',
     delay: '0.5s'
@@ -104,8 +60,8 @@ const cases: CaseItem[] = [
     name: '少儿编程教育机器人实验室',
     category: 'education',
     categoryName: '教育智能机器人',
-    image: 'https://picsum.photos/id/42/800/500',
-    description: '为青少年活动中心打造编程教育机器人实验室，配备50台入门级编程机器人，覆盖8-16岁年龄段，学员续课率提升45%',
+    image: '/images/edurobot/case3.png',
+    description: '为某青少年活动中心打造编程教育机器人实验室，配备50台入门级编程机器人，覆盖8-16岁年龄段，学员续课率提升45%',
     highlight: ['趣味化编程', '分级教学', '作品展示', '家长监控'],
     client: '某青少年科技教育机构',
     delay: '0.6s'
@@ -115,8 +71,8 @@ const cases: CaseItem[] = [
     name: '特殊教育智能陪伴机器人',
     category: 'education',
     categoryName: '教育智能机器人',
-    image: 'https://picsum.photos/id/64/800/500',
-    description: '为特殊教育学校定制15台智能陪伴机器人，具备情绪识别和个性化教学功能，特殊儿童学习参与度提升60%',
+    image: '/images/edurobot/case4.png',
+    description: '为某特殊教育学校定制15台智能陪伴机器人，具备情绪识别和个性化教学功能，特殊儿童学习参与度提升60%',
     highlight: ['情绪识别', '个性化教学', '语音安抚', '数据记录'],
     client: '某特殊教育学校',
     delay: '0.7s'
@@ -128,7 +84,7 @@ const cases: CaseItem[] = [
     name: '大型商场智能清洁机器人系统',
     category: 'cleaning',
     categoryName: '商用清洁机器人',
-    image: 'https://picsum.photos/id/106/800/500',
+    image: '/images/cleanrobot/case1.png',
     description: '为全国连锁商场部署50台商用清洁机器人，具备SLAM自主导航和多模式清洁功能，夜间无人清洁覆盖率达100%，人力成本降低50%',
     highlight: ['激光自主导航', '多模式清洁', '远程监控', '12小时续航'],
     client: '某商业综合体管理集团',
@@ -136,11 +92,11 @@ const cases: CaseItem[] = [
   },
   {
     id: 10,
-    name: '国际机场智能清洁解决方案',
+    name: '机场智能清洁解决方案',
     category: 'cleaning',
     categoryName: '商用清洁机器人',
-    image: 'https://picsum.photos/id/96/800/500',
-    description: '为国际机场部署60台商用清洁机器人，分区域智能调度，实现航站楼全覆盖清洁，清洁效率提升3倍，能耗降低20%',
+    image: '/images/cleanrobot/case2.png',
+    description: '为某机场部署60台商用清洁机器人，分区域智能调度，实现航站楼全覆盖清洁，清洁效率提升3倍，能耗降低20%',
     highlight: ['机场专用导航', '油污深度清洁', '航班信息联动', '自动充电'],
     client: '某国际机场运营公司',
     delay: '0.9s'
@@ -150,8 +106,8 @@ const cases: CaseItem[] = [
     name: '高铁站智能清洁机器人',
     category: 'cleaning',
     categoryName: '商用清洁机器人',
-    image: 'https://picsum.photos/id/103/800/500',
-    description: '为大型高铁站部署40台智能清洁机器人，适配高铁到站高峰时段的快速清洁需求，候车区清洁效率提升2.5倍',
+    image: '/images/cleanrobot/case3.png',
+    description: '为某大型高铁站部署40台智能清洁机器人，适配高铁到站高峰时段的快速清洁需求，候车区清洁效率提升2.5倍',
     highlight: ['高峰时段适配', '快速清洁模式', '人流避让', '垃圾识别'],
     client: '某铁路运营公司',
     delay: '1.0s'
@@ -161,8 +117,8 @@ const cases: CaseItem[] = [
     name: '写字楼智能清洁机器人',
     category: 'cleaning',
     categoryName: '商用清洁机器人',
-    image: 'https://picsum.photos/id/110/800/500',
-    description: '为甲级写字楼部署25台智能清洁机器人，夜间集中清洁办公区域，白天定点清洁公共区域，清洁成本降低35%',
+    image: '/images/cleanrobot/case4.png',
+    description: '为某甲级写字楼部署25台智能清洁机器人，夜间集中清洁办公区域，白天定点清洁公共区域，清洁成本降低35%',
     highlight: ['静音设计', '分时段清洁', '地毯专用模式', '智能调度'],
     client: '某写字楼物业管理公司',
     delay: '1.1s'
@@ -174,7 +130,7 @@ const cases: CaseItem[] = [
     name: '工业园区安保巡检机器人',
     category: 'security',
     categoryName: '安保巡检机器人',
-    image: 'https://picsum.photos/id/1018/800/500',
+    image: '/images/securityrobot/case1.png',
     description: '为某工业园区部署15台安保巡检机器人，配备高清摄像头和智能识别系统，24小时不间断巡逻，安全隐患响应时间缩短至3分钟',
     highlight: ['红外热成像', '智能语音告警', '人脸识别', '防入侵检测'],
     client: '某智能制造产业园',
@@ -185,8 +141,8 @@ const cases: CaseItem[] = [
     name: '智慧社区安保巡检机器人',
     category: 'security',
     categoryName: '安保巡检机器人',
-    image: 'https://picsum.photos/id/1031/800/500',
-    description: '为高端智慧社区部署20台安保巡检机器人，覆盖社区公共区域和停车场，安全事件发生率降低40%，业主满意度提升85%',
+    image: '/images/securityrobot/case2.png',
+    description: '为某高端智慧社区部署20台安保巡检机器人，覆盖社区公共区域和停车场，安全事件发生率降低40%，业主满意度提升85%',
     highlight: ['车牌识别', '陌生人预警', '紧急呼叫', 'APP联动'],
     client: '某智慧社区运营公司',
     delay: '1.3s'
@@ -196,8 +152,8 @@ const cases: CaseItem[] = [
     name: '大型厂区防爆巡检机器人',
     category: 'security',
     categoryName: '安保巡检机器人',
-    image: 'https://picsum.photos/id/1047/800/500',
-    description: '为化工园区部署8台防爆型安保巡检机器人，适应易燃易爆环境，实现危险区域无人巡检，安全事故率降为0',
+    image: '/images/securityrobot/case3.png',
+    description: '为某化工园区部署8台防爆型安保巡检机器人，适应易燃易爆环境，实现危险区域无人巡检，安全事故率降为0',
     highlight: ['防爆设计', '气体检测', '远程操控', '耐高温'],
     client: '某化工集团',
     delay: '1.4s'
@@ -207,8 +163,8 @@ const cases: CaseItem[] = [
     name: '仓储园区安保巡检机器人',
     category: 'security',
     categoryName: '安保巡检机器人',
-    image: 'https://picsum.photos/id/1060/800/500',
-    description: '为大型仓储园区部署30台安保巡检机器人，实现仓库外围和内部通道全覆盖巡检，货物丢失率降低90%',
+    image: '/images/securityrobot/case4.png',
+    description: '为某大型仓储园区部署30台安保巡检机器人，实现仓库外围和内部通道全覆盖巡检，货物丢失率降低90%',
     highlight: ['夜视功能', '物品识别', '路径优化', '集群管理'],
     client: '某物流仓储公司',
     delay: '1.5s'
@@ -220,8 +176,8 @@ const cases: CaseItem[] = [
     name: '博物馆智能导览机器人',
     category: 'guide',
     categoryName: '展厅导览机器人',
-    image: 'https://picsum.photos/id/24/800/500',
-    description: '为省级博物馆定制8台展厅导览机器人，提供多语种语音讲解、智能路径规划和互动问答，游客停留时间增加35%，讲解满意度达98%',
+    image: '/images/guiderobot/case1.png',
+    description: '为某博物馆定制8台展厅导览机器人，提供多语种语音讲解、智能路径规划和互动问答，游客停留时间增加35%，讲解满意度达98%',
     highlight: ['多语种讲解', 'AR互动展示', '智能避障', '客流分析'],
     client: '某省级博物馆',
     delay: '1.6s'
@@ -231,8 +187,8 @@ const cases: CaseItem[] = [
     name: '科技馆智能导览机器人',
     category: 'guide',
     categoryName: '展厅导览机器人',
-    image: 'https://picsum.photos/id/36/800/500',
-    description: '为科技馆定制12台智能导览机器人，结合展品特点提供互动式讲解，青少年游客参与度提升50%，科普效果显著增强',
+    image: '/images/guiderobot/case2.png',
+    description: '为某科技馆定制12台智能导览机器人，结合展品特点提供互动式讲解，青少年游客参与度提升50%，科普效果显著增强',
     highlight: ['互动实验讲解', '科学知识问答', '展品联动', '趣味引导'],
     client: '某省级科技馆',
     delay: '1.7s'
@@ -242,8 +198,8 @@ const cases: CaseItem[] = [
     name: '企业展厅智能导览机器人',
     category: 'guide',
     categoryName: '展厅导览机器人',
-    image: 'https://picsum.photos/id/48/800/500',
-    description: '为上市公司企业展厅部署6台智能导览机器人，提供企业历程、产品介绍、技术优势等讲解服务，接待效率提升70%',
+    image: '/images/guiderobot/case3.png',
+    description: '为某公司企业展厅部署6台智能导览机器人，提供企业历程、产品介绍、技术优势等讲解服务，接待效率提升70%',
     highlight: ['定制化内容', '数据实时更新', '客户信息收集', '多终端联动'],
     client: '某上市公司品牌部',
     delay: '1.8s'
@@ -253,22 +209,67 @@ const cases: CaseItem[] = [
     name: '文旅小镇智能导览机器人',
     category: 'guide',
     categoryName: '展厅导览机器人',
-    image: 'https://picsum.photos/id/65/800/500',
-    description: '为文旅特色小镇部署15台户外型导览机器人，提供景点讲解、路径指引、特色推荐等服务，游客体验评分提升80%',
+    image: '/images/guiderobot/case4.png',
+    description: '为某文旅特色小镇部署15台户外型导览机器人，提供景点讲解、路径指引、特色推荐等服务，游客体验评分提升80%',
     highlight: ['户外防水', 'GPS导航', '方言讲解', '商户联动'],
     client: '某文旅小镇运营公司',
     delay: '1.9s'
+  },
+ // 人形表演机器人 (4个)
+  {
+    id: 1,
+    name: '文旅景区人形表演机器人',
+    category: 'performance',
+    categoryName: '人形表演机器人',
+    image: '/images/manrobot/case1.png',
+    description: '为某5A级文旅景区部署10台人形表演机器人，搭载精准律动控制与仿生关节设计，每日完成8场主题舞蹈表演，游客体验评分提升40%',
+    highlight: ['16自由度仿生关节', '多机协同编队', '自定义动作编程', '8小时续航'],
+    client: '某文旅景区运营公司',
+    delay: '0s'
+  },
+  {
+    id: 2,
+    name: '主题乐园人形机器人互动表演',
+    category: 'performance',
+    categoryName: '人形表演机器人',
+    image:  '/images/manrobot/case2.png',
+    description: '为某主题乐园定制20台定制化人形表演机器人，结合乐园IP打造专属舞蹈和互动节目，节假日游客接待量提升25%',
+    highlight: ['IP定制动作', '观众互动感应', '防水防尘设计', '快速换装'],
+    client: '某主题乐园集团',
+    delay: '0.1s'
+  },
+  {
+    id: 3,
+    name: '商业综合体人形迎宾表演机器人',
+    category: 'performance',
+    categoryName: '人形表演机器人',
+    image: '/images/manrobot/case3.png',
+    description: '为某高端商业综合体部署8台人形迎宾表演机器人，兼具迎宾接待和小型舞台表演功能，商场人气提升30%',
+    highlight: ['语音交互迎宾', '场景化表演', '客流引导', '自动充电'],
+    client: '某商业地产集团',
+    delay: '0.2s'
+  },
+  {
+    id: 4,
+    name: '大型展会人形表演机器人',
+    category: 'performance',
+    categoryName: '人形表演机器人',
+    image: '/images/manrobot/case4.png',
+    description: '为某科技展会定制6台人形表演机器人，展示前沿机器人技术，吸引观展人数提升50%，品牌曝光度显著增加',
+    highlight: ['科技感动作编排', '多语言解说', '展台引流', '远程控制'],
+    client: '某会展服务公司',
+    delay: '0.3s'
   }
 ];
 
 // 筛选选项（对应5类机器人）
 const filters: FilterOption[] = [
-  { value: 'all', label: '全部案例', icon: faCheckCircle },
-  { value: 'performance', label: '人形表演机器人', icon: faRobot },
-  { value: 'education', label: '教育智能机器人', icon: faGraduationCap },
   { value: 'cleaning', label: '商用清洁机器人', icon: faBroom },
   { value: 'security', label: '安保巡检机器人', icon: faShieldAlt },
-  { value: 'guide', label: '展厅导览机器人', icon: faMapMarkerAlt }
+  { value: 'education', label: '教育智能机器人', icon: faGraduationCap },
+  { value: 'guide', label: '展厅导览机器人', icon: faMapMarkerAlt },
+  { value: 'performance', label: '人形表演机器人', icon: faRobot },
+ { value: 'all', label: '全部案例', icon: faCheckCircle }
 ];
 
 export default function Cases() {
@@ -369,7 +370,7 @@ export default function Cases() {
         {/* 标题区域 */}
         <div className="text-center max-w-4xl mx-auto mb-16 animate-on-scroll">
           <h2 className="text-[clamp(1.8rem,4vw,3.2rem)] font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-500">
-            智能机器人应用案例
+            智能机器人应用场景
           </h2>
           
           <p className="text-gray-300 text-sm md:text-base leading-relaxed mb-6">

@@ -71,7 +71,7 @@ export default function Navbar() {
     { id: 'home', label: '首页' },
     { id: 'about', label: '关于我们' },
     { id: 'products', label: '产品中心' },
-    { id: 'cases', label: '案例展示' },
+    { id: 'cases', label: '应用场景' },
   ];
 
   return (
