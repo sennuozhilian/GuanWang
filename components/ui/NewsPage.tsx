@@ -56,7 +56,9 @@ export default function NewsPage() {
     const fetchNewsData = async () => {
       try {
         setLoading(true);
-        const res = await axios.get('/api/news');
+        // 添加时间戳参数，确保每次请求都是新的，不会被浏览器缓存
+        const timestamp = new Date().getTime();
+        const res = await axios.get(`/api/news?_t=${timestamp}`);
         // 兼容不同的返回格式
         const data = Array.isArray(res.data) ? res.data : (res.data?.data || []);
         setNewsData(data as NewsItem[]);

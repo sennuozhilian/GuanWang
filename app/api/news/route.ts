@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getFeishuBitableData, adaptFeishuDataToFrontend, FrontendNewsItem } from '@/lib/feishu-service';
 
+// 禁用API路由缓存
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // GET请求处理（核心接口）
 export async function GET() {
   try {
@@ -17,14 +21,25 @@ export async function GET() {
       return b.publish_date.localeCompare(a.publish_date);
     });
 
-    // 4. 返回数据
-    return NextResponse.json(adaptedNewsList);
+    // 4. 返回数据，设置缓存控制头
+    return NextResponse.json(adaptedNewsList, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
   } catch (error) {
     console.error('新闻接口处理失败：', error);
     // 兜底返回空数组，避免前端崩溃
     return NextResponse.json([], { 
       status: 200,
-      headers: { 'Content-Type': 'application/json' }
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     });
   }
 }
