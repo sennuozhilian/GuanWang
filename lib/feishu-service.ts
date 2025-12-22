@@ -211,11 +211,11 @@ export const getProxyUrl = (imageUrl: string) => {
 
 // 适配前端字段格式
 export const adaptFeishuDataToFrontend = (newsList: FeishuNewsItem[]): FrontendNewsItem[] => {
-  return newsList.map(item => {
-    // 创建详情列表，先添加封面图
-    const details = [
-      { image: getProxyUrl(item.image), text: '', type: 'image' as const }
-    ];
+    return newsList.map(item => {
+      // 创建详情列表，先添加封面图
+      const details: Array<{ image: string; text: string; type?: 'image' | 'content' }> = [
+        { image: getProxyUrl(item.image), text: '', type: 'image' }
+      ];
     
     // 按顺序添加content1, photo1, content2, photo2...
     let i = 1;
