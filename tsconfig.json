@@ -4,7 +4,7 @@
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
-    "strict": false, // 暂时关闭严格模式，避免额外报错
+    "strict": false, // 保持你关闭严格模式的配置
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "esModuleInterop": true,
@@ -15,12 +15,29 @@
     "jsx": "preserve",
     "incremental": true,
     "plugins": [{"name": "next"}],
-    // 新增路径别名配置（解决@/导入问题）
+    // 核心路径别名配置（适配你的项目结构）
     "baseUrl": ".", 
     "paths": {
-      "@/*": ["./*"] 
-    }
+      "@/*": ["./*"],
+      // 补充子目录别名，避免多层相对路径出错
+      "@/lib/*": ["./lib/*"],
+      "@/components/*": ["./components/*"],
+      "@/app/*": ["./app/*"]
+    },
+    // 兼容低版本Next.js的配置（移除高版本特性）
+    "moduleDetection": "auto",
+    "allowImportingTsExtensions": false,
+    "noUncheckedIndexedAccess": false
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": [
+    "next-env.d.ts", 
+    "**/*.ts", 
+    "**/*.tsx", 
+    ".next/types/**/*.ts",
+    // 明确包含业务目录，确保类型检测覆盖
+    "lib/**/*",
+    "components/**/*",
+    "app/**/*"
+  ],
   "exclude": ["node_modules"]
 }

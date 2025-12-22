@@ -3,84 +3,134 @@ import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { usePathname, useRouter } from 'next/navigation'; // 新增 useRouter
 
-// 导航链接类型定义
 interface NavLink {
   id: string;
   label: string;
+  isPage?: boolean;
 }
 
-// 常量定义
-const SCROLL_THRESHOLD = 50; // 滚动阈值
-const SECTIONS_OFFSET = 100; // section 偏移量
+const SCROLL_THRESHOLD = 50;
+const SECTIONS_OFFSET = 100;
+
+// 提前定义导航链接
+const navLinks: NavLink[] = [
+  { id: 'home', label: '首页' },
+  { id: 'about', label: '关于我们' },
+  { id: 'products', label: '产品中心' },
+  { id: 'cases', label: '应用场景' },
+  { id: 'news', label: '公司资讯', isPage: true }, // 目标路由：/news
+];
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState('home');
+  const [activeSection, setActiveSection] = useState<string | null>(null);
   const [navbarScrolled, setNavbarScrolled] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
   const sectionsRef = useRef<NodeListOf<HTMLElement> | null>(null);
+  const pathname = usePathname();
+  const activeLinkRef = useRef<string | null>(null);
+  const router = useRouter(); // 初始化 Next.js 路由
 
-  // 平滑滚动到指定区域
-  const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
+  // 标记客户端hydration完成（简化逻辑，避免禁用按钮）
+  useEffect(() => {
+    setHydrated(true);
+    // 初始化激活态
+    const initActiveSection = () => {
+      const pageLink = navLinks.find(link => link.isPage && pathname === `/${link.id}`);
+      if (pageLink) {
+        activeLinkRef.current = pageLink.id;
+        setActiveSection(pageLink.id);
+        return;
+      }
+      if (pathname === '/') {
+        activeLinkRef.current = 'home';
+        setActiveSection('home');
+      }
+    };
+    initActiveSection();
+  }, [pathname]);
+
+  // 滚动监听逻辑（仅首页生效）
+  useEffect(() => {
+    if (pathname !== '/') return;
+
+    let scrollHandler: (() => void) | null = null;
+    const updateScrollActive = () => {
+      sectionsRef.current = document.querySelectorAll('section[id]');
+      scrollHandler = () => {
+        setNavbarScrolled(window.scrollY > SCROLL_THRESHOLD);
+        let current = 'home';
+        sectionsRef.current?.forEach(section => {
+          const sectionTop = section.offsetTop - SECTIONS_OFFSET;
+          const sectionHeight = section.offsetHeight;
+          if (window.scrollY >= sectionTop && window.scrollY < sectionTop + sectionHeight) {
+            current = section.id || 'home';
+          }
+        });
+        if (current !== activeSection) {
+          activeLinkRef.current = current;
+          setActiveSection(current);
+        }
+      };
+      window.addEventListener('scroll', scrollHandler, { passive: true });
+      return () => scrollHandler && window.removeEventListener('scroll', scrollHandler);
+    };
+    updateScrollActive();
+    window.addEventListener('popstate', updateScrollActive);
+    return () => window.removeEventListener('popstate', updateScrollActive);
+  }, [pathname, activeSection]);
+
+  // 锚点跳转逻辑（仅首页生效）
+  useEffect(() => {
+    if (pathname !== '/' || !window.location.hash) return;
+    const hash = window.location.hash.slice(1);
+    const element = document.getElementById(hash);
     if (element) {
-      window.scrollTo({
-        top: element.offsetTop - 80, // 考虑导航栏高度
-        behavior: 'smooth'
-      });
+      setTimeout(() => window.scrollTo({ top: element.offsetTop - 80, behavior: 'smooth' }), 100);
+    }
+  }, [pathname]);
+
+  // 修复核心：简化导航点击逻辑，使用 Next.js 路由跳转
+  const handleNavClick = (link: NavLink) => {
+    // 调试日志（可选，验证点击触发）
+    console.log('点击导航：', link);
+    
+    // 1. 路由页面跳转（如公司资讯 /news）
+    if (link.isPage) {
+      router.push(`/${link.id}`); // 替换 window.location.href，用 Next.js 路由
+      closeMobileMenu();
+      return;
+    }
+
+    // 2. 首页锚点跳转
+    if (pathname === '/') {
+      const element = document.getElementById(link.id);
+      if (element) {
+        window.scrollTo({ top: element.offsetTop - 80, behavior: 'smooth' });
+      }
+      closeMobileMenu();
+    } else {
+      // 非首页跳转到首页锚点
+      router.push(`/#${link.id}`);
+      closeMobileMenu();
     }
   };
 
-  // 监听滚动事件
-  useEffect(() => {
-    // 初始化 sections 引用
-    sectionsRef.current = document.querySelectorAll('section[id]');
+  const closeMobileMenu = () => setMobileMenuOpen(false);
 
-    const handleScroll = () => {
-      // 导航栏滚动样式变化
-      setNavbarScrolled(window.scrollY > SCROLL_THRESHOLD);
-      
-      // 高亮当前section对应的导航链接
-      let current = 'home';
-      
-      sectionsRef.current?.forEach(section => {
-        const sectionTop = section.offsetTop - SECTIONS_OFFSET;
-        const sectionHeight = section.offsetHeight;
-        if (window.scrollY >= sectionTop && window.scrollY < sectionTop + sectionHeight) {
-          current = section.id || 'home';
-        }
-      });
-      
-      if (current !== activeSection) {
-        setActiveSection(current);
-      }
-    };
-
-    // 使用 passive 优化滚动性能
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [activeSection]);
-
-  // 关闭移动菜单
-  const closeMobileMenu = () => {
-    setMobileMenuOpen(false);
+  // 激活态判断
+  const getIsActive = (link: NavLink) => {
+    if (link.isPage) return pathname === `/${link.id}`;
+    return pathname === '/' && activeSection === link.id;
   };
-
-  // 导航链接数据
-  const navLinks: NavLink[] = [
-    { id: 'home', label: '首页' },
-    { id: 'about', label: '关于我们' },
-    { id: 'products', label: '产品中心' },
-    { id: 'cases', label: '应用场景' },
-  ];
 
   return (
     <header 
       id="navbar" 
       className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${
-        navbarScrolled 
-          ? 'bg-dark/90 backdrop-blur-md shadow-lg py-2' 
-          : 'bg-transparent py-4'
+        navbarScrolled ? 'bg-dark/90 backdrop-blur-md shadow-lg py-2' : 'bg-transparent py-4'
       }`}
       role="banner"
     >
@@ -88,7 +138,7 @@ export default function Navbar() {
         <div className="flex justify-between items-center">
           {/* Logo */}
           <button 
-            onClick={() => scrollToSection('home')}
+            onClick={() => router.push('/')} // 改用路由跳转
             className="flex items-center space-x-2 cursor-pointer"
             aria-label="返回首页"
           >
@@ -97,6 +147,7 @@ export default function Navbar() {
                 src="/images/logo.png" 
                 alt="森诺智联Logo" 
                 fill 
+                sizes="(max-width: 768px) 80px, 100px"
                 className="object-contain"
                 priority
               />
@@ -106,25 +157,26 @@ export default function Navbar() {
             </span>
           </button>
           
-          {/* 桌面端导航 */}
+          {/* 桌面端导航（确保按钮正常显示） */}
           <nav className="hidden md:flex items-center space-x-8" role="navigation" aria-label="主导航">
-            {navLinks.map((link) => (
-              <button
-                key={link.id}
-                onClick={() => scrollToSection(link.id)}
-                className={`font-medium transition-colors nav-link ${
-                  activeSection === link.id 
-                    ? 'nav-active text-white' 
-                    : 'text-gray-300 hover:text-primary'
-                }`}
-                aria-current={activeSection === link.id ? 'page' : undefined}
-              >
-                {link.label}
-              </button>
-            ))}
+            {navLinks.map((link) => {
+              const isActive = getIsActive(link);
+              return (
+                <button
+                  key={link.id}
+                  onClick={() => handleNavClick(link)}
+                  className={`font-medium transition-colors nav-link ${isActive ? 'nav-active text-white' : 'text-gray-300 hover:text-primary'}`}
+                  aria-current={isActive ? 'page' : undefined}
+                  style={{ opacity: 1, visibility: 'visible' }} // 强制显示
+                >
+                  {link.label}
+                </button>
+              );
+            })}
             <button
-              onClick={() => scrollToSection('contact')}
+              onClick={() => handleNavClick({ id: 'contact', label: '联系我们' })}
               className="px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition-all transform hover:scale-105 nav-link no-highlight"
+              style={{ opacity: 1, visibility: 'visible' }} // 强制显示
             >
               联系我们
             </button>
@@ -143,7 +195,7 @@ export default function Navbar() {
         </div>
       </div>
       
-      {/* 移动端导航菜单 */}
+      {/* 移动端导航菜单（移除disabled） */}
       <div 
         id="mobileMenu" 
         className={`md:hidden absolute top-full left-0 right-0 z-40 w-full bg-secondary shadow-lg transition-all duration-300 ease-in-out ${
@@ -153,26 +205,28 @@ export default function Navbar() {
         aria-label="移动导航"
       >
         <div className="container mx-auto px-4 py-4 flex flex-col space-y-5">
-          {navLinks.map((link) => (
-            <button
-              key={link.id}
-              onClick={() => {
-                scrollToSection(link.id);
-                closeMobileMenu();
-              }}
-              className={`font-medium py-3 border-b border-gray-700 nav-link transition-colors ${
-                activeSection === link.id 
-                  ? 'nav-active text-white' 
-                  : 'text-gray-300 hover:text-primary'
-              }`}
-              aria-current={activeSection === link.id ? 'page' : undefined}
-            >
-              {link.label}
-            </button>
-          ))}
+          {navLinks.map((link) => {
+            const isActive = getIsActive(link);
+            return (
+              <button
+                key={link.id}
+                onClick={() => {
+                  handleNavClick(link);
+                  closeMobileMenu();
+                }}
+                className={`font-medium py-3 border-b border-gray-700 nav-link transition-colors ${
+                  isActive ? 'nav-active text-white' : 'text-gray-300 hover:text-primary'
+                }`}
+                aria-current={isActive ? 'page' : undefined}
+                // 移除 disabled
+              >
+                {link.label}
+              </button>
+            );
+          })}
           <button
             onClick={() => {
-              scrollToSection('contact');
+              handleNavClick({ id: 'contact', label: '联系我们' });
               closeMobileMenu();
             }}
             className="px-6 py-3 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium text-center transition-all nav-link no-highlight"

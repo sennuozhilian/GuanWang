@@ -3,6 +3,7 @@ module.exports = {
   content: [
     './app/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
+    './pages/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {
@@ -18,12 +19,10 @@ module.exports = {
       fontFamily: {
         inter: ['Inter', 'system-ui', 'sans-serif'],
       },
-      // 明确启用 transform 相关工具类（兜底）
-      transform: {
-        '115': 'scale(1.15)', // 对应 scale-[1.15]
-        'rotate-5': 'rotate(5deg)', // 对应 rotate-[5deg]
+      transforms: {
+        '115': 'scale(1.15)',
+        'rotate-5': 'rotate(5deg)',
       },
-      // 可选：扩展旋转角度（如果需要其他角度）
       rotate: {
         '5': '5deg',
         '10': '10deg',
@@ -34,7 +33,8 @@ module.exports = {
         'fade-in': 'fadeIn 1s ease forwards',
         'scan': 'scan 2s ease-in-out infinite',
         'pulse-glow': 'pulseGlow 2s ease-in-out infinite',
-        'tech-pop': 'techPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards'
+        'tech-pop': 'techPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+        'slide-up-right': 'slideUpRight 0.3s ease-out forwards',
       },
       keyframes: {
         float: {
@@ -73,6 +73,10 @@ module.exports = {
             transform: 'translateX(-50%) scale(1) rotate(0deg)',
             boxShadow: '0 0 20px rgba(14, 165, 233, 0.8), 0 0 40px rgba(14, 165, 233, 0.5)'
           }
+        },
+        slideUpRight: {
+          'from': { opacity: 0, transform: 'translate(-10px, 10px)' },
+          'to': { opacity: 1, transform: 'translate(0, 0)' },
         }
       }
     },

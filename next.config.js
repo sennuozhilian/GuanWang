@@ -17,16 +17,26 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'picsum.photos',
-        pathname: '/**', // 关键修改：/** 匹配所有层级路径（如 /id/96/600/400）
+        pathname: '/**',
       },
       {
         protocol: 'http',
         hostname: 'localhost',
-        pathname: '/**', // 本地图片也支持多级路径
+        pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: 'localhost',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'bytedance.larkoffice.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'open.feishu.cn',
         pathname: '/**',
       },
     ],
