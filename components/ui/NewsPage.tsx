@@ -678,7 +678,7 @@ export default function NewsPage({ initialNewsData }: NewsPageProps) {
               
               {/* 正文内容 */}
               <div className="prose prose-invert max-w-none text-gray-200 text-lg md:text-xl leading-relaxed">
-                <p className="text-xl md:text-2xl mb-8 text-gray-300 font-light">{selectedNews.summary || '暂无摘要'}</p>
+                <p className="text-base md:text-lg mb-8 text-gray-300 font-light">{selectedNews.summary || '暂无摘要'}</p>
                 
                 <div className="space-y-10 text-base md:text-lg leading-relaxed">
                   {selectedNews.details.length > 0 ? (
