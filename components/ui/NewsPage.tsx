@@ -6,7 +6,6 @@ import {
   faCalendarAlt, faChevronRight,
   faArrowUp, faTimes, faChevronLeft, faChevronRight as faChevronRightIcon
 } from '@fortawesome/free-solid-svg-icons';
-import axios from 'axios';
 import { FrontendNewsItem as NewsItem } from '../../lib/feishu-service';
 import LoadingAnimation from './LoadingAnimation'; // 导入科技感加载动画组件
 
@@ -34,6 +33,7 @@ export default function NewsPage({ initialNewsData }: NewsPageProps) {
   const [currentTopNewsIndex, setCurrentTopNewsIndex] = useState(0);
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
   const [showDetail, setShowDetail] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const [loading, setLoading] = useState(false); // 不再需要加载状态，因为数据在服务器端获取
   const [newsData, setNewsData] = useState<NewsItem[]>(initialNewsData);
@@ -148,10 +148,26 @@ export default function NewsPage({ initialNewsData }: NewsPageProps) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const viewNewsDetail = (news: NewsItem) => {
+  const viewNewsDetail = async (news: NewsItem) => {
+    setIsLoading(true);
     setSelectedNews(news);
     setShowDetail(true);
     scrollToTop();
+    
+    try {
+      // 如果新闻详情为空，则从API获取完整数据
+      if (!news.details || news.details.length === 0) {
+        const response = await fetch(`/api/news?id=${news.id}`);
+        const fullNewsData = await response.json();
+        if (fullNewsData && !fullNewsData.error) {
+          setSelectedNews(fullNewsData);
+        }
+      }
+    } catch (error) {
+      console.error('获取新闻详情失败:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const closeDetail = () => {
@@ -681,7 +697,12 @@ export default function NewsPage({ initialNewsData }: NewsPageProps) {
                 <p className="text-base md:text-lg mb-8 text-gray-300 font-light">{selectedNews.summary || '暂无摘要'}</p>
                 
                 <div className="space-y-10 text-base md:text-lg leading-relaxed">
-                  {selectedNews.details.length > 0 ? (
+                  {isLoading ? (
+                    <div className="text-center py-20">
+                      <LoadingAnimation size="lg" color="cyan-500" />
+                      <p className="text-xl text-cyan-400 mt-4">加载详情内容中...</p>
+                    </div>
+                  ) : selectedNews.details.length > 0 ? (
                     selectedNews.details.map((detail, idx) => (
                       <div key={idx} className="space-y-4">
                         {/* 详情媒体（图片或视频） */}

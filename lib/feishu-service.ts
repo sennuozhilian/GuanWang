@@ -362,7 +362,7 @@ const parseSingleMediaUrl = (url: string): { url: string; type: 'image' | 'video
 };
 
 // 适配前端字段格式
-export const adaptFeishuDataToFrontend = (newsList: FeishuNewsItem[]): FrontendNewsItem[] => {
+export const adaptFeishuDataToFrontend = (newsList: FeishuNewsItem[], includeDetails: boolean = true): FrontendNewsItem[] => {
     return newsList.map(item => {
       console.log('adaptFeishuDataToFrontend item:', JSON.stringify(item));
       // 直接使用已经确定的媒体类型，而不是重新解析
@@ -370,142 +370,144 @@ export const adaptFeishuDataToFrontend = (newsList: FeishuNewsItem[]): FrontendN
       const coverUrl = item.image;
       
       // 创建详情列表，不添加封面图（封面图已经作为独立字段存在）
-      const details: Array<{ image: string; text: string; type?: 'image' | 'content' | 'video' }> = [];
-    
-    // 按顺序添加attachment1、content1、attachment2、content2、attachment3、content3到详情列表
-    let i = 1;
-    while (true) {
-      const contentKey = `content${i}`;
-      const photoKey = `photo${i}`;
-      const phoneKey = `phone${i}`; // 处理拼写错误
-      const attachmentKey = `attachment${i}`; // 处理新的attachment字段
-      const photoTypeKey = `photo${i}Type`;
-      const phoneTypeKey = `phone${i}Type`;
-      const attachmentTypeKey = `attachment${i}Type`;
+      let details: Array<{ image: string; text: string; type?: 'image' | 'content' | 'video' }> = [];
       
-      // 检查是否有更多内容
-      const hasContent = item.hasOwnProperty(contentKey) && item[contentKey];
-      const hasPhoto = item.hasOwnProperty(photoKey) && item[photoKey];
-      const hasPhone = item.hasOwnProperty(phoneKey) && item[phoneKey];
-      const hasAttachment = item.hasOwnProperty(attachmentKey) && item[attachmentKey];
-      
-      if (!hasContent && !hasPhoto && !hasPhone && !hasAttachment) {
-        break; // 没有更多内容，退出循环
-      }
-      
-      // 添加新的attachment字段内容（图片或视频）
-      if (hasAttachment) {
-        // 直接使用已经存储的媒体类型
-        const attachmentUrl = item[attachmentKey];
-        const attachmentType = item[`${attachmentKey}Type`] || 'image';
-        
-        // 处理单个媒体文件的情况
-        if (!Array.isArray(attachmentUrl)) {
-          if (attachmentUrl && attachmentUrl !== coverUrl) {
-            details.push({
-              image: attachmentUrl,
-              text: '',
-              type: attachmentType
-            });
-          }
-        } 
-        // 处理多个媒体文件的情况
-        else {
-          // 确保attachmentType也是数组，如果不是则使用默认值
-          const attachmentTypes = Array.isArray(attachmentType) ? attachmentType : Array(attachmentUrl.length).fill('image');
+      if (includeDetails) {
+        // 按顺序添加attachment1、content1、attachment2、content2、attachment3、content3到详情列表
+        let i = 1;
+        while (true) {
+          const contentKey = `content${i}`;
+          const photoKey = `photo${i}`;
+          const phoneKey = `phone${i}`; // 处理拼写错误
+          const attachmentKey = `attachment${i}`; // 处理新的attachment字段
+          const photoTypeKey = `photo${i}Type`;
+          const phoneTypeKey = `phone${i}Type`;
+          const attachmentTypeKey = `attachment${i}Type`;
           
-          // 遍历所有媒体文件
-          for (let j = 0; j < attachmentUrl.length; j++) {
-            if (attachmentUrl[j] && attachmentUrl[j] !== coverUrl) {
-              details.push({
-                image: attachmentUrl[j],
-                text: '',
-                type: attachmentTypes[j] || 'image'
-              });
+          // 检查是否有更多内容
+          const hasContent = item.hasOwnProperty(contentKey) && item[contentKey];
+          const hasPhoto = item.hasOwnProperty(photoKey) && item[photoKey];
+          const hasPhone = item.hasOwnProperty(phoneKey) && item[phoneKey];
+          const hasAttachment = item.hasOwnProperty(attachmentKey) && item[attachmentKey];
+          
+          if (!hasContent && !hasPhoto && !hasPhone && !hasAttachment) {
+            break; // 没有更多内容，退出循环
+          }
+          
+          // 添加新的attachment字段内容（图片或视频）
+          if (hasAttachment) {
+            // 直接使用已经存储的媒体类型
+            const attachmentUrl = item[attachmentKey];
+            const attachmentType = item[`${attachmentKey}Type`] || 'image';
+            
+            // 处理单个媒体文件的情况
+            if (!Array.isArray(attachmentUrl)) {
+              if (attachmentUrl && attachmentUrl !== coverUrl) {
+                details.push({
+                  image: attachmentUrl,
+                  text: '',
+                  type: attachmentType
+                });
+              }
+            } 
+            // 处理多个媒体文件的情况
+            else {
+              // 确保attachmentType也是数组，如果不是则使用默认值
+              const attachmentTypes = Array.isArray(attachmentType) ? attachmentType : Array(attachmentUrl.length).fill('image');
+              
+              // 遍历所有媒体文件
+              for (let j = 0; j < attachmentUrl.length; j++) {
+                if (attachmentUrl[j] && attachmentUrl[j] !== coverUrl) {
+                  details.push({
+                    image: attachmentUrl[j],
+                    text: '',
+                    type: attachmentTypes[j] || 'image'
+                  });
+                }
+              }
             }
           }
-        }
-      }
-      
-      // 添加旧的photo字段内容（图片或视频）
-      if (hasPhoto) {
-        // 直接使用已经存储的媒体类型，而不是重新解析
-        const photoUrl = item[photoKey];
-        const photoType = item[`${photoKey}Type`] || 'image';
-        
-        // 处理单个媒体文件的情况
-        if (!Array.isArray(photoUrl)) {
-          if (photoUrl && photoUrl !== coverUrl) {
-            details.push({
-              image: photoUrl,
-              text: '',
-              type: photoType
-            });
-          }
-        } 
-        // 处理多个媒体文件的情况
-        else {
-          // 确保photoType也是数组，如果不是则使用默认值
-          const photoTypes = Array.isArray(photoType) ? photoType : Array(photoUrl.length).fill('image');
           
-          // 遍历所有媒体文件
-          for (let j = 0; j < photoUrl.length; j++) {
-            if (photoUrl[j] && photoUrl[j] !== coverUrl) {
-              details.push({
-                image: photoUrl[j],
-                text: '',
-                type: photoTypes[j] || 'image'
-              });
+          // 添加旧的photo字段内容（图片或视频）
+          if (hasPhoto) {
+            // 直接使用已经存储的媒体类型，而不是重新解析
+            const photoUrl = item[photoKey];
+            const photoType = item[`${photoKey}Type`] || 'image';
+            
+            // 处理单个媒体文件的情况
+            if (!Array.isArray(photoUrl)) {
+              if (photoUrl && photoUrl !== coverUrl) {
+                details.push({
+                  image: photoUrl,
+                  text: '',
+                  type: photoType
+                });
+              }
+            } 
+            // 处理多个媒体文件的情况
+            else {
+              // 确保photoType也是数组，如果不是则使用默认值
+              const photoTypes = Array.isArray(photoType) ? photoType : Array(photoUrl.length).fill('image');
+              
+              // 遍历所有媒体文件
+              for (let j = 0; j < photoUrl.length; j++) {
+                if (photoUrl[j] && photoUrl[j] !== coverUrl) {
+                  details.push({
+                    image: photoUrl[j],
+                    text: '',
+                    type: photoTypes[j] || 'image'
+                  });
+                }
+              }
             }
           }
-        }
-      }
-      
-      // 添加旧的phone字段内容（处理拼写错误）
-      if (hasPhone) {
-        // 直接使用已经存储的媒体类型，而不是重新解析
-        const phoneUrl = item[phoneKey];
-        const phoneType = item[`${phoneKey}Type`] || 'image';
-        
-        // 处理单个媒体文件的情况
-        if (!Array.isArray(phoneUrl)) {
-          if (phoneUrl && phoneUrl !== coverUrl) {
-            details.push({
-              image: phoneUrl,
-              text: '',
-              type: phoneType
-            });
-          }
-        } 
-        // 处理多个媒体文件的情况
-        else {
-          // 确保phoneType也是数组，如果不是则使用默认值
-          const phoneTypes = Array.isArray(phoneType) ? phoneType : Array(phoneUrl.length).fill('image');
           
-          // 遍历所有媒体文件
-          for (let j = 0; j < phoneUrl.length; j++) {
-            if (phoneUrl[j] && phoneUrl[j] !== coverUrl) {
-              details.push({
-                image: phoneUrl[j],
-                text: '',
-                type: phoneTypes[j] || 'image'
-              });
+          // 添加旧的phone字段内容（处理拼写错误）
+          if (hasPhone) {
+            // 直接使用已经存储的媒体类型，而不是重新解析
+            const phoneUrl = item[phoneKey];
+            const phoneType = item[`${phoneKey}Type`] || 'image';
+            
+            // 处理单个媒体文件的情况
+            if (!Array.isArray(phoneUrl)) {
+              if (phoneUrl && phoneUrl !== coverUrl) {
+                details.push({
+                  image: phoneUrl,
+                  text: '',
+                  type: phoneType
+                });
+              }
+            } 
+            // 处理多个媒体文件的情况
+            else {
+              // 确保phoneType也是数组，如果不是则使用默认值
+              const phoneTypes = Array.isArray(phoneType) ? phoneType : Array(phoneUrl.length).fill('image');
+              
+              // 遍历所有媒体文件
+              for (let j = 0; j < phoneUrl.length; j++) {
+                if (phoneUrl[j] && phoneUrl[j] !== coverUrl) {
+                  details.push({
+                    image: phoneUrl[j],
+                    text: '',
+                    type: phoneTypes[j] || 'image'
+                  });
+                }
+              }
             }
           }
+          
+          // 添加文本内容（如果有）
+          if (hasContent) {
+            details.push({
+              image: '',
+              text: item[contentKey],
+              type: 'content' as const
+            });
+          }
+          
+          i++;
         }
       }
-      
-      // 添加文本内容（如果有）
-      if (hasContent) {
-        details.push({
-          image: '',
-          text: item[contentKey],
-          type: 'content' as const
-        });
-      }
-      
-      i++;
-    }
     
     return {
       id: item.id,
@@ -516,7 +518,7 @@ export const adaptFeishuDataToFrontend = (newsList: FeishuNewsItem[]): FrontendN
       cover_type: coverType,
       is_top: item.isTop || false,
       publish_date: item.date,
-      details: details.filter(item => item.image || item.text) // 过滤空内容
+      details: includeDetails ? details.filter(item => item.image || item.text) : [] as FrontendNewsItem['details'] // 根据参数决定是否返回详情，确保类型完全一致
     };
   });
 };
