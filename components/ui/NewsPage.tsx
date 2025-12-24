@@ -401,14 +401,14 @@ export default function NewsPage({ initialNewsData }: NewsPageProps) {
               <>
                 <button
                   onClick={handleCarouselPrev}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-cyan-900/70 transition-all z-10"
+                  className="absolute left-4 top-12 translate-y-0 md:top-1/2 md:-translate-y-1/2 w-12 h-12 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-cyan-900/70 transition-all z-10"
                   aria-label="上一条"
                 >
                   <FontAwesomeIcon icon={faChevronLeft} size="lg" />
                 </button>
                 <button
                   onClick={handleCarouselNext}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-cyan-900/70 transition-all z-10"
+                  className="absolute right-4 top-12 translate-y-0 md:top-1/2 md:-translate-y-1/2 w-12 h-12 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-cyan-900/70 transition-all z-10"
                   aria-label="下一条"
                 >
                   <FontAwesomeIcon icon={faChevronRightIcon} size="lg" />
