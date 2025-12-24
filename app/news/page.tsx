@@ -1,6 +1,10 @@
 import NewsPage from '../../components/ui/NewsPage';
 import { getFeishuBitableData, adaptFeishuDataToFrontend } from '@/lib/feishu-service';
 
+// 禁用页面静态缓存，确保每次请求都获取最新数据
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function News() {
   // 服务器端获取新闻数据
   const newsList = await getFeishuBitableData();
