@@ -1,10 +1,7 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
   "/api/feishu-media/[fileToken]/route": "app/api/feishu-media/[fileToken]/route.js",
-  "/privacy-policy/page": "app/privacy-policy/page.js",
-  "/sitemap/page": "app/sitemap/page.js",
-  "/page": "app/page.js",
   "/news/page": "app/news/page.js",
-  "/terms-of-service/page": "app/terms-of-service/page.js",
+  "/page": "app/page.js",
   "/api/news/route": "app/api/news/route.js"
 }

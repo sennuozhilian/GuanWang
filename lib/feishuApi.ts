@@ -17,19 +17,25 @@ const FEISHU_CONFIG = {
   TENANT_ID: process.env.FEISHU_TENANT_ID || '',
 };
 
-// 完整类型定义（恢复tags + 新增content1/photo1）
+// 完整类型定义（恢复tags + 新增content1/photo1 + 修复details）
 export interface NewsItem {
   id: string;
   title: string;
   summary: string;
   tags: string[]; // 恢复标签字段
   image: string; // 封面图
+  cover_type?: 'image' | 'video'; // 封面类型
   date: string;
   isTop?: boolean;
   content1: string; // 正文文本
   photo1: string; // 正文图片
   mediaUrl: string;
-  mediaType: 'image' | 'unknown';
+  mediaType: 'image' | 'video';
+  details: Array<{
+    image?: string;
+    type: 'image' | 'video';
+    text?: string;
+  }>; // 新闻详情内容
 }
 
 // 日期格式化
@@ -70,20 +76,81 @@ const getFeishuToken = async () => {
   return res.data.app_access_token;
 };
 
-// 适配你提供的图片字段结构（解析entities中的图片URL）
-const parseFeishuImage = (imageField: any): string => {
-  // 情况1：标准附件格式
-  if (Array.isArray(imageField) && imageField.length > 0) {
-    return imageField[0].file_token ? `/api/feishu-media/${imageField[0].file_token}` : '';
+// 解析飞书媒体（图片/视频，适配富文本entities/标准附件两种格式）
+const parseFeishuMedia = (mediaField: any): { url: string; type: 'image' | 'video' } => {
+  // 支持的视频格式列表
+  const VIDEO_EXTENSIONS = /\.(mp4|avi|mov|wmv|flv|mkv|webm|mpeg|mpg|3gp|m4v|ogg)$/i;
+  // 支持的图片格式列表
+  const IMAGE_EXTENSIONS = /\.(jpg|jpeg|png|gif|bmp|webp|svg)$/i;
+  
+  // 情况1：标准附件格式（文件上传）
+  if (Array.isArray(mediaField) && mediaField.length > 0) {
+    const media = mediaField[0];
+    const fileToken = media.file_token;
+    const fileName = media.file_name || '';
+    const fileType = media.file_type || '';
+    
+    // 使用媒体代理API
+    const url = fileToken ? `/api/feishu-media/${fileToken}` : '';
+    
+    // 优先根据文件类型判断
+    if (fileType.includes('video')) {
+      return { url, type: 'video' };
+    }
+    if (fileType.includes('image')) {
+      return { url, type: 'image' };
+    }
+    
+    // 其次根据文件名后缀判断
+    if (VIDEO_EXTENSIONS.test(fileName)) {
+      return { url, type: 'video' };
+    }
+    if (IMAGE_EXTENSIONS.test(fileName)) {
+      return { url, type: 'image' };
+    }
+    
+    // 默认返回图片类型
+    return { url, type: 'image' };
   }
-  // 情况2：富文本entities格式（你提供的结构）
-  if (imageField?.entities && Array.isArray(imageField.entities)) {
-    const imageEntity = imageField.entities.find(item => 
-      item.entity_type === 2 && item.entity_content?.image?.image_ori?.url
+  
+  // 情况2：富文本entities格式（富文本中的图片/视频）
+  if (mediaField?.entities && Array.isArray(mediaField.entities)) {
+    // 查找所有媒体实体（图片和视频）
+    const mediaEntity = mediaField.entities.find(item => 
+      (item.entity_type === 2 && item.entity_content?.image) || // 图片实体
+      (item.entity_type === 3 && item.entity_content?.video)   // 视频实体
     );
-    return imageEntity?.entity_content?.image?.image_ori?.url || '';
+    
+    if (mediaEntity) {
+      // 处理视频实体
+      if (mediaEntity.entity_type === 3 && mediaEntity.entity_content?.video) {
+        const videoUrl = mediaEntity.entity_content.video.video_ori?.url || 
+                         mediaEntity.entity_content.video.video_preview?.url || '';
+        return { url: videoUrl, type: 'video' };
+      }
+      // 处理图片实体
+      if (mediaEntity.entity_type === 2 && mediaEntity.entity_content?.image) {
+        const imageUrl = mediaEntity.entity_content.image.image_ori?.url || '';
+        // 额外检查图片URL是否实际为视频
+        if (VIDEO_EXTENSIONS.test(imageUrl)) {
+          return { url: imageUrl, type: 'video' };
+        }
+        return { url: imageUrl, type: 'image' };
+      }
+    }
   }
-  return '';
+  
+  // 情况3：直接URL格式
+  if (typeof mediaField === 'string' && (mediaField.startsWith('http://') || mediaField.startsWith('https://'))) {
+    if (VIDEO_EXTENSIONS.test(mediaField)) {
+      return { url: mediaField, type: 'video' };
+    }
+    if (IMAGE_EXTENSIONS.test(mediaField)) {
+      return { url: mediaField, type: 'image' };
+    }
+  }
+  
+  return { url: '', type: 'image' };
 };
 
 // 解析tags（飞书多选/单选字段适配）
@@ -96,18 +163,44 @@ const parseFeishuTags = (tagsField: any): string[] => {
 // 核心：映射飞书表格数据
 const mapFeishuData = (feishuRecord: any): NewsItem => {
   const fields = feishuRecord.fields || {};
+  
+  // 解析封面媒体（图片或视频）
+  const coverMedia = parseFeishuMedia(fields.image);
+  const photo1Media = parseFeishuMedia(fields.photo1);
+  
+  // 构建详情数组
+  const details: Array<{ image?: string; type: 'image' | 'video'; text?: string }> = [];
+  
+  // 添加正文图片（如果有）
+  if (photo1Media.url) {
+    details.push({
+      image: photo1Media.url,
+      type: photo1Media.type,
+    });
+  }
+  
+  // 添加正文文本（如果有）
+  if (fields.content1) {
+    details.push({
+      text: fields.content1,
+      type: 'image', // 默认类型，因为主要是文本
+    });
+  }
+  
   return {
     id: feishuRecord.record_id || '',
     title: fields.title || '',
     summary: fields.summary || '',
     tags: parseFeishuTags(fields.tags), // 恢复标签解析
-    image: parseFeishuImage(fields.image), // 封面图（适配富文本/附件格式）
+    image: coverMedia.url, // 封面图URL
+    cover_type: coverMedia.type, // 封面类型（image或video）
     date: formatTimestamp(fields.date),
     isTop: fields.isTop === true || fields.isTop === '是',
     content1: fields.content1 || '', // 正文文本
-    photo1: parseFeishuImage(fields.photo1), // 正文图片（适配富文本/附件格式）
-    mediaUrl: parseFeishuImage(fields.image),
-    mediaType: 'image',
+    photo1: photo1Media.url, // 正文图片URL
+    mediaUrl: coverMedia.url,
+    mediaType: coverMedia.type,
+    details, // 新闻详情内容
   };
 };
 

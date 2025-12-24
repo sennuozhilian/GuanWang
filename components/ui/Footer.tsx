@@ -1,6 +1,8 @@
 'use client';
 import Image from 'next/image';
 import { useState } from 'react';
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faMapMarker, 
@@ -16,6 +18,7 @@ import {
 
 export default function Footer() {
   const [isCertModalOpen, setIsCertModalOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
     <footer className="bg-[#0a0e17] py-12 border-t border-[#16213e] relative overflow-hidden">
@@ -79,24 +82,26 @@ export default function Footer() {
                 </span>
               </h4>
               <ul className="space-y-3">
-                {[
-                  { id: 'home', label: '首页' },
-                  { id: 'about', label: '关于我们' },
-                  { id: 'products', label: '产品中心' },
-                  { id: 'cases', label: '案例展示' },
-                  { id: 'contact', label: '联系我们' },
-                ].map((item) => (
-                  <li key={item.id}>
-                    <a 
-                      href={`#${item.id}`} 
-                      className="text-[#94a3b8] hover:text-[#06b6d4] transition-colors text-sm flex items-center gap-2
+                {
+                  [
+                    { id: 'home', label: '首页' },
+                    { id: 'about', label: '关于我们' },
+                    { id: 'products', label: '产品中心' },
+                    { id: 'cases', label: '应用场景' },
+                    { id: 'news', label: '公司资讯' },
+                  ].map((item) => (
+                    <li key={item.id}>
+                      <Link 
+                        href={item.id === 'news' ? `/news` : (pathname === '/' ? `#${item.id}` : `/#${item.id}`)} 
+                        className="text-[#94a3b8] hover:text-[#06b6d4] transition-colors text-sm flex items-center gap-2
                                relative group-hover:before:w-full before:absolute before:bottom-0 before:left-0 before:h-0.5 before:w-0 before:bg-gradient-to-r before:from-[#06b6d4] before:to-[#8b5cf6] before:transition-all before:duration-300"
-                    >
-                      <span className="w-1 h-1 bg-[#06b6d4] rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></span>
-                      {item.label}
-                    </a>
-                  </li>
-                ))}
+                      >
+                        <span className="w-1 h-1 bg-[#06b6d4] rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></span>
+                        {item.label}
+                      </Link>
+                    </li>
+                  ))
+                }
               </ul>
             </div>
           </div>
@@ -119,8 +124,16 @@ export default function Footer() {
                   '展厅导览机器人',
                 ].map((product) => (
                   <li key={product}>
-                    <a className="text-[#94a3b8] hover:text-[#22c55e] transition-colors text-sm flex items-center gap-2
+                    <a 
+                      className="text-[#94a3b8] hover:text-[#22c55e] transition-colors text-sm flex items-center gap-2 cursor-pointer
                                relative group-hover:before:w-full before:absolute before:bottom-0 before:left-0 before:h-0.5 before:w-0 before:bg-gradient-to-r before:from-[#22c55e] before:to-[#06b6d4] before:transition-all before:duration-300"
+                      onClick={() => {
+                        // 导航到产品中心
+                        const productsSection = document.getElementById('products');
+                        if (productsSection) {
+                          productsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                      }}
                     >
                       <span className="w-1 h-1 bg-[#22c55e] rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></span>
                       {product}
@@ -173,11 +186,6 @@ export default function Footer() {
           <p className="text-[#64748b] text-sm mb-4 md:mb-0">
             &copy; {new Date().getFullYear()} 森诺智联嘉(大连)高新产业技术研究有限公司. <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#06b6d4] to-[#8b5cf6]">All Rights Reserved</span>
           </p>
-          <div className="flex gap-6">
-            <a href="/privacy-policy" className="text-[#64748b] hover:text-[#06b6d4] transition-colors text-sm">隐私政策</a>
-            <a href="/terms-of-service" className="text-[#64748b] hover:text-[#06b6d4] transition-colors text-sm">服务条款</a>
-            <a href="/sitemap" className="text-[#64748b] hover:text-[#06b6d4] transition-colors text-sm">网站地图</a>
-          </div>
         </div>
       </div>
 

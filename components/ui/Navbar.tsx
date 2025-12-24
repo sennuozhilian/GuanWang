@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { usePathname, useRouter } from 'next/navigation'; // 新增 useRouter
+import LoadingAnimation from './LoadingAnimation';
 
 interface NavLink {
   id: string;
@@ -28,6 +29,21 @@ export default function Navbar() {
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [navbarScrolled, setNavbarScrolled] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const [mediaLoading, setMediaLoading] = useState<Record<string, boolean>>({});
+
+  // 媒体加载状态管理
+  const startMediaLoading = (mediaUrl: string) => {
+    setMediaLoading(prev => ({ ...prev, [mediaUrl]: true }));
+  };
+
+  const handleMediaLoad = (mediaUrl: string) => {
+    setMediaLoading(prev => ({ ...prev, [mediaUrl]: false }));
+  };
+
+  // 初始化logo加载状态
+  useEffect(() => {
+    startMediaLoading('/images/logo.png');
+  }, []);
   const sectionsRef = useRef<NodeListOf<HTMLElement> | null>(null);
   const pathname = usePathname();
   const activeLinkRef = useRef<string | null>(null);
@@ -50,6 +66,8 @@ export default function Navbar() {
       }
     };
     initActiveSection();
+    // 确保页面加载后导航栏可见
+    document.getElementById('navbar')?.classList.add('opacity-100', 'translate-y-0');
   }, [pathname]);
 
   // 滚动监听逻辑（仅首页生效）
@@ -143,6 +161,12 @@ export default function Navbar() {
             aria-label="返回首页"
           >
             <div className="w-10 h-10 relative">
+              {/* Logo加载动画 */}
+              {mediaLoading['/images/logo.png'] && (
+                <div className="absolute inset-0 bg-dark/80 flex items-center justify-center z-10">
+                  <LoadingAnimation size="sm" color="cyan-500" />
+                </div>
+              )}
               <Image 
                 src="/images/logo.png" 
                 alt="森诺智联Logo" 
@@ -150,6 +174,9 @@ export default function Navbar() {
                 sizes="(max-width: 768px) 80px, 100px"
                 className="object-contain"
                 priority
+                onLoadStart={() => startMediaLoading('/images/logo.png')}
+                onLoad={() => handleMediaLoad('/images/logo.png')}
+                onError={() => handleMediaLoad('/images/logo.png')}
               />
             </div>
             <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">

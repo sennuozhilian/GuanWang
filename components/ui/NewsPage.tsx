@@ -2,40 +2,42 @@
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image'; // 导入Next.js图片组件
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { 
-  faCalendarAlt, faChevronRight, 
+import {
+  faCalendarAlt, faChevronRight,
   faArrowUp, faTimes, faChevronLeft, faChevronRight as faChevronRightIcon
 } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
+import { FrontendNewsItem as NewsItem } from '../../lib/feishu-service';
+import LoadingAnimation from './LoadingAnimation'; // 导入科技感加载动画组件
 
 // 类型定义增强（添加缺失的类型）
 interface NewsDetailItem {
   image: string; 
   text: string; 
-}
-
-interface NewsItem {
-  id: string;
-  title: string;
-  summary: string;
-  tags: string[];
-  cover_image: string;
-  is_top: boolean;
-  publish_date: string;
-  details: NewsDetailItem[];
+  type?: 'image' | 'content' | 'video';
 }
 
 // 模糊占位符base64（优化图片加载体验）
 const BLUR_PLACEHOLDER = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+P+/HgAFeAJ5gMm5/gAAAABJRU5ErkJggg==';
 
-export default function NewsPage() {
+// 媒体加载状态管理（使用Map存储不同媒体的加载状态）
+interface MediaLoadingState {
+  [key: string]: boolean;
+}
+
+interface NewsPageProps {
+  initialNewsData: NewsItem[];
+}
+
+export default function NewsPage({ initialNewsData }: NewsPageProps) {
   // 状态定义
   const [currentTopNewsIndex, setCurrentTopNewsIndex] = useState(0);
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
   const [showDetail, setShowDetail] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [newsData, setNewsData] = useState<NewsItem[]>([]);
+  const [loading, setLoading] = useState(false); // 不再需要加载状态，因为数据在服务器端获取
+  const [newsData, setNewsData] = useState<NewsItem[]>(initialNewsData);
+  const [mediaLoading, setMediaLoading] = useState<MediaLoadingState>({}); // 媒体加载状态
   
   // Ref定义
   const backToTopRef = useRef<HTMLButtonElement>(null);
@@ -51,27 +53,7 @@ export default function NewsPage() {
     new Date(b.publish_date).getTime() - new Date(a.publish_date).getTime()
   );
 
-  // 获取新闻数据
-  useEffect(() => {
-    const fetchNewsData = async () => {
-      try {
-        setLoading(true);
-        // 添加时间戳参数，确保每次请求都是新的，不会被浏览器缓存
-        const timestamp = new Date().getTime();
-        const res = await axios.get(`/api/news?_t=${timestamp}`);
-        // 兼容不同的返回格式
-        const data = Array.isArray(res.data) ? res.data : (res.data?.data || []);
-        setNewsData(data as NewsItem[]);
-      } catch (error) {
-        console.error('页面请求资讯数据失败:', error);
-        setNewsData([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchNewsData();
-  }, []);
+  // 不再需要客户端数据获取，数据已从服务器端获取
 
   // 轮播逻辑（修复内存泄漏）
   useEffect(() => {
@@ -177,8 +159,16 @@ export default function NewsPage() {
     setSelectedNews(null);
   };
 
+
+
   const getNewsImageUrl = (news: NewsItem) => {
-    return news.cover_image || '';
+    // 确保只有有效的图片类型URL且非空值才会被返回
+    return news.cover_type === 'image' && news.cover_image ? news.cover_image : '';
+  };
+
+  const getNewsVideoUrl = (news: NewsItem) => {
+    // 确保只有有效的视频类型URL且非空值才会被返回
+    return news.cover_type === 'video' && news.cover_image ? news.cover_image : '';
   };
 
   // 图片加载错误处理（适配Next/Image）
@@ -187,11 +177,28 @@ export default function NewsPage() {
     img.style.display = 'none';
     const parent = img.closest('.image-container');
     if (parent) {
+      // 清除加载状态
+      const mediaUrl = img.getAttribute('src') || '';
+      if (mediaUrl) {
+        setMediaLoading(prev => ({ ...prev, [mediaUrl]: false }));
+      }
       parent.innerHTML = `
         <div class="w-full h-full bg-gray-800 flex items-center justify-center">
           <p class="text-gray-500 text-lg">图片加载失败</p>
         </div>
       `;
+    }
+  };
+
+  // 媒体加载完成处理
+  const handleMediaLoad = (mediaUrl: string) => {
+    setMediaLoading(prev => ({ ...prev, [mediaUrl]: false }));
+  };
+
+  // 开始加载媒体
+  const startMediaLoading = (mediaUrl: string) => {
+    if (!mediaLoading[mediaUrl]) {
+      setMediaLoading(prev => ({ ...prev, [mediaUrl]: true }));
     }
   };
 
@@ -272,21 +279,61 @@ export default function NewsPage() {
                     key={news.id}
                     className="min-w-full h-full relative"
                   >
-                    {/* 轮播图片（替换为Next/Image） */}
+                    {/* 轮播图片或视频 */}
                     <div className="image-container w-full h-full relative">
-                      {getNewsImageUrl(news) ? (
-                        <Image
-                          src={getNewsImageUrl(news)}
-                          alt={news.title}
-                          fill
-                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1200px"
-                          placeholder="blur"
-                          blurDataURL={BLUR_PLACEHOLDER}
-                          className="object-cover"
-                          style={{ filter: 'sepia(5%) brightness(85%) contrast(105%)' }}
-                          onError={handleImageError}
-                          priority // 首屏轮播图优先加载
-                        />
+                      {(getNewsImageUrl(news) || getNewsVideoUrl(news)) ? (
+                        news.cover_type === 'video' ? (
+                          <>
+                            {/* 视频加载动画 */}
+                            {mediaLoading[getNewsVideoUrl(news)] && (
+                              <div className="absolute inset-0 bg-dark/80 flex items-center justify-center z-10">
+                                <LoadingAnimation size="lg" color="cyan-500" />
+                              </div>
+                            )}
+                            <video
+                              src={getNewsVideoUrl(news)}
+                              autoPlay
+                              loop
+                              muted
+                              playsInline
+                              className="absolute inset-0 w-full h-full object-cover"
+                              style={{ filter: 'sepia(5%) brightness(85%) contrast(105%)' }}
+                              onLoadStart={() => startMediaLoading(getNewsVideoUrl(news))}
+                              onLoadedData={() => handleMediaLoad(getNewsVideoUrl(news))}
+                              onError={(e) => {
+                                console.error('视频加载失败:', e);
+                                handleMediaLoad(getNewsVideoUrl(news));
+                              }}
+                            >
+                              您的浏览器不支持视频播放。
+                            </video>
+                          </>
+                        ) : (
+                          getNewsImageUrl(news) && !getNewsImageUrl(news).includes('__video__') && (
+                            <>
+                              {/* 图片加载动画 */}
+                              {mediaLoading[getNewsImageUrl(news)] && (
+                                <div className="absolute inset-0 bg-dark/80 flex items-center justify-center z-10">
+                                  <LoadingAnimation size="lg" color="cyan-500" />
+                                </div>
+                              )}
+                              <Image
+                                src={getNewsImageUrl(news)}
+                                alt={news.title}
+                                fill
+                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1200px"
+                                placeholder="blur"
+                                blurDataURL={BLUR_PLACEHOLDER}
+                                className="object-cover"
+                                style={{ filter: 'sepia(5%) brightness(85%) contrast(105%)' }}
+                                onError={handleImageError}
+                                priority // 首屏轮播图优先加载
+                                onLoadStart={() => startMediaLoading(getNewsImageUrl(news))}
+                                onLoad={() => handleMediaLoad(getNewsImageUrl(news))}
+                              />
+                            </>
+                          )
+                        )
                       ) : (
                         <div className="w-full h-full bg-gray-800 flex items-center justify-center">
                           <p className="text-gray-500 text-lg">暂无图片</p>
@@ -395,21 +442,61 @@ export default function NewsPage() {
                 className="bg-gray-800/40 backdrop-blur-sm rounded-xl overflow-hidden border border-cyan-500/10 shadow-[0_0_30px_rgba(0,255,255,0.05)] hover:shadow-[0_0_40px_rgba(0,255,255,0.1)] hover:border-cyan-500/20 transition-all duration-500 transform hover:-translate-y-2 cursor-pointer h-full flex flex-col"
                 onClick={() => viewNewsDetail(news)}
               >
-                {/* 新闻封面图 */}
+                {/* 新闻封面图或视频 */}
                 <div className="image-container relative h-48 overflow-hidden">
-                  {getNewsImageUrl(news) ? (
-                    <Image
-                      src={getNewsImageUrl(news)}
-                      alt={news.title}
-                      fill
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                      placeholder="blur"
-                      blurDataURL={BLUR_PLACEHOLDER}
-                      className="object-cover transition-transform duration-700 hover:scale-110"
-                      style={{ filter: 'sepia(5%) brightness(90%) contrast(105%)' }}
-                      loading="lazy"
-                      onError={handleImageError}
-                    />
+                  {(getNewsImageUrl(news) || getNewsVideoUrl(news)) ? (
+                    news.cover_type === 'video' ? (
+                      <>
+                        {/* 视频加载动画 */}
+                        {mediaLoading[getNewsVideoUrl(news)] && (
+                          <div className="absolute inset-0 bg-dark/80 flex items-center justify-center z-10">
+                            <LoadingAnimation size="md" color="cyan-500" />
+                          </div>
+                        )}
+                        <video
+                          src={getNewsVideoUrl(news)}
+                          autoPlay
+                          loop
+                          muted
+                          playsInline
+                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 hover:scale-110"
+                          style={{ filter: 'sepia(5%) brightness(90%) contrast(105%)' }}
+                          onLoadStart={() => startMediaLoading(getNewsVideoUrl(news))}
+                          onLoadedData={() => handleMediaLoad(getNewsVideoUrl(news))}
+                          onError={(e) => {
+                            console.error('视频加载失败:', e);
+                            handleMediaLoad(getNewsVideoUrl(news));
+                          }}
+                        >
+                          您的浏览器不支持视频播放。
+                        </video>
+                      </>
+                    ) : (
+                        getNewsImageUrl(news) && !getNewsImageUrl(news).includes('__video__') && (
+                          <>
+                            {/* 图片加载动画 */}
+                            {mediaLoading[getNewsImageUrl(news)] && (
+                              <div className="absolute inset-0 bg-dark/80 flex items-center justify-center z-10">
+                                <LoadingAnimation size="md" color="cyan-500" />
+                              </div>
+                            )}
+                            <Image
+                              src={getNewsImageUrl(news)}
+                              alt={news.title}
+                              fill
+                              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                              placeholder="blur"
+                              blurDataURL={BLUR_PLACEHOLDER}
+                              className="object-cover transition-transform duration-700 hover:scale-110"
+                              style={{ filter: 'sepia(5%) brightness(90%) contrast(105%)' }}
+                              loading="lazy"
+                              onError={handleImageError}
+                              onLoadStart={() => startMediaLoading(getNewsImageUrl(news))}
+                              onLoad={() => handleMediaLoad(getNewsImageUrl(news))}
+                            />
+                          </>
+                        )
+                    )
                   ) : (
                     <div className="w-full h-full bg-gray-800 flex items-center justify-center">
                       <p className="text-gray-500">暂无图片</p>
@@ -495,26 +582,66 @@ export default function NewsPage() {
               <FontAwesomeIcon icon={faTimes} size="lg" />
             </button>
             
-            {/* 详情头部图片 */}
+            {/* 详情头部图片或视频 */}
             <div className="image-container relative h-64 md:h-80 lg:h-96">
-              {getNewsImageUrl(selectedNews) ? (
-                <Image
-                  src={getNewsImageUrl(selectedNews)}
-                  alt={selectedNews.title}
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1200px"
-                  placeholder="blur"
-                  blurDataURL={BLUR_PLACEHOLDER}
-                  className="object-cover"
-                  style={{ filter: 'sepia(5%) brightness(80%) contrast(105%)' }}
-                  loading="eager"
-                  onError={handleImageError}
-                />
-              ) : (
-                <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-                  <p className="text-gray-500 text-xl">暂无图片</p>
-                </div>
-              )}
+              {(getNewsImageUrl(selectedNews) || getNewsVideoUrl(selectedNews)) ? (
+                  selectedNews.cover_type === 'video' ? (
+                    <>
+                      {/* 视频加载动画 */}
+                      {mediaLoading[getNewsVideoUrl(selectedNews)] && (
+                        <div className="absolute inset-0 bg-dark/80 flex items-center justify-center z-10">
+                          <LoadingAnimation size="lg" color="cyan-500" />
+                        </div>
+                      )}
+                      <video
+                        src={getNewsVideoUrl(selectedNews)}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="absolute inset-0 w-full h-full object-cover"
+                        style={{ filter: 'sepia(5%) brightness(80%) contrast(105%)' }}
+                        onLoadStart={() => startMediaLoading(getNewsVideoUrl(selectedNews))}
+                        onLoadedData={() => handleMediaLoad(getNewsVideoUrl(selectedNews))}
+                        onError={(e) => {
+                          console.error('视频加载失败:', e);
+                          handleMediaLoad(getNewsVideoUrl(selectedNews));
+                        }}
+                      >
+                        您的浏览器不支持视频播放。
+                      </video>
+                    </>
+                  ) : (
+                    getNewsImageUrl(selectedNews) && !getNewsImageUrl(selectedNews).includes('__video__') && (
+                      <>
+                        {/* 图片加载动画 */}
+                        {mediaLoading[getNewsImageUrl(selectedNews)] && (
+                          <div className="absolute inset-0 bg-dark/80 flex items-center justify-center z-10">
+                            <LoadingAnimation size="lg" color="cyan-500" />
+                          </div>
+                        )}
+                        <Image
+                          src={getNewsImageUrl(selectedNews)}
+                          alt={selectedNews.title}
+                          fill
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1200px"
+                          placeholder="blur"
+                          blurDataURL={BLUR_PLACEHOLDER}
+                          className="object-cover"
+                          style={{ filter: 'sepia(5%) brightness(80%) contrast(105%)' }}
+                          loading="eager"
+                          onError={handleImageError}
+                          onLoadStart={() => startMediaLoading(getNewsImageUrl(selectedNews))}
+                          onLoad={() => handleMediaLoad(getNewsImageUrl(selectedNews))}
+                        />
+                      </>
+                    )
+                  )
+                ) : (
+                  <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                    <p className="text-gray-500 text-xl">暂无图片</p>
+                  </div>
+                )}
               <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/70 to-transparent mix-blend-overlay"></div>
               
               <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 lg:p-12">
@@ -557,21 +684,52 @@ export default function NewsPage() {
                   {selectedNews.details.length > 0 ? (
                     selectedNews.details.map((detail, idx) => (
                       <div key={idx} className="space-y-4">
-                        {/* 详情图片 */}
+                        {/* 详情媒体（图片或视频） */}
                         {detail.image && (
                           <div className="image-container rounded-xl overflow-hidden shadow-lg relative aspect-video">
-                            <Image
-                              src={detail.image}
-                              alt={`详情图片${idx+1}`}
-                              fill
-                              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1200px"
-                              placeholder="blur"
-                              blurDataURL={BLUR_PLACEHOLDER}
-                              className="object-cover"
-                              onError={handleImageError}
-                            />
+                            {/* 媒体加载动画 */}
+                            {mediaLoading[detail.image] && (
+                              <div className="absolute inset-0 bg-dark/80 flex items-center justify-center z-10">
+                                <LoadingAnimation size="lg" color="cyan-500" />
+                              </div>
+                            )}
+                            {/* 根据媒体类型显示视频或图片 */}
+                            {detail.type === 'video' ? (
+                              <video
+                                src={detail.image}
+                                controls
+                                autoPlay={false}
+                                muted={false}
+                                className="absolute inset-0 w-full h-full object-cover"
+                                onLoadStart={() => startMediaLoading(detail.image)}
+                                onLoadedData={() => handleMediaLoad(detail.image)}
+                                onError={(e) => {
+                                  console.error('视频加载失败:', e);
+                                  handleMediaLoad(detail.image);
+                                }}
+                              >
+                                您的浏览器不支持视频播放。
+                              </video>
+                            ) : detail.type === 'image' ? (
+                              <Image
+                                src={detail.image}
+                                alt={`详情图片${idx+1}`}
+                                fill
+                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1200px"
+                                placeholder="blur"
+                                blurDataURL={BLUR_PLACEHOLDER}
+                                className="object-cover"
+                                onLoadStart={() => startMediaLoading(detail.image)}
+                                onLoadedData={() => handleMediaLoad(detail.image)}
+                                onError={(e) => {
+                                  handleImageError(e);
+                                  handleMediaLoad(detail.image);
+                                }}
+                              />
+                            ) : null}
                           </div>
                         )}
+                        
                         {/* 详情文本 */}
                         {detail.text && <p className="text-gray-200">{detail.text}</p>}
                       </div>

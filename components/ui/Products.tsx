@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import LoadingAnimation from './LoadingAnimation';
 import { 
   faChevronLeft, faChevronRight, 
   faBrain, faShieldAlt, faBroom, faGraduationCap,
@@ -127,6 +128,43 @@ export default function ProductsCarousel() {
   const [isHovered, setIsHovered] = useState(false);
   const products = staticProducts;
 
+  // 初始化时为所有产品图片设置加载状态为true
+  const initialMediaLoading = products.reduce((acc, product) => {
+    acc[product.image] = true;
+    return acc;
+  }, {} as Record<string, boolean>);
+
+  const [mediaLoading, setMediaLoading] = useState<Record<string, boolean>>(initialMediaLoading);
+
+  // 媒体加载状态管理
+  const startMediaLoading = (mediaUrl: string) => {
+    setMediaLoading(prev => ({ ...prev, [mediaUrl]: true }));
+  };
+
+  const handleMediaLoad = (mediaUrl: string) => {
+    setMediaLoading(prev => ({ ...prev, [mediaUrl]: false }));
+  };
+
+  // 添加超时机制，防止图片加载状态永远为true
+  useEffect(() => {
+    // 为每个图片设置5秒超时
+    const timers = products.map(product => {
+      return setTimeout(() => {
+        setMediaLoading(prev => ({ ...prev, [product.image]: false }));
+      }, 5000);
+    });
+
+    // 清理定时器
+    return () => timers.forEach(timer => clearTimeout(timer));
+  }, [products]);
+
+  // 当切换产品时，重置当前产品图片的加载状态
+  useEffect(() => {
+    if (products.length > 0) {
+      startMediaLoading(products[currentIndex].image);
+    }
+  }, [currentIndex, products]);
+
   // 自动轮播逻辑
   useEffect(() => {
     if (products.length <= 1) return;
@@ -201,12 +239,21 @@ export default function ProductsCarousel() {
             <div className="relative aspect-[16/9]">
               {/* 产品图片层 */}
               <div className="absolute inset-0 overflow-hidden">
+                {/* 图片加载动画 */}
+                {mediaLoading[currentProduct.image] && (
+                  <div className="absolute inset-0 bg-dark/80 flex items-center justify-center z-10">
+                    <LoadingAnimation size="lg" color="cyan-500" />
+                  </div>
+                )}
                 <img
                   src={currentProduct.image}
                   alt={currentProduct.name}
                   className="w-full h-full object-cover transition-all duration-1000 ease-out hover:scale-105 hover:brightness-110"
                   loading="eager"
                   style={{ filter: 'sepia(10%) brightness(85%) contrast(105%)' }}
+                  onLoadStart={() => startMediaLoading(currentProduct.image)}
+                  onLoad={() => handleMediaLoad(currentProduct.image)}
+                  onError={() => handleMediaLoad(currentProduct.image)}
                 />
                 
                 {/* 渐变遮罩 */}

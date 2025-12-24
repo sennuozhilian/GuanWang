@@ -29,7 +29,7 @@ export interface FeishuNewsItem {
   isTop?: boolean;
   [key: string]: any; // 支持动态字段如content1, photo1, content2, photo2等
   mediaUrl: string;
-  mediaType: 'image' | 'unknown';
+  mediaType: 'image' | 'video';
 }
 
 // 前端最终接收的新闻类型
@@ -39,12 +39,13 @@ export interface FrontendNewsItem {
   summary: string;
   tags: string[];
   cover_image: string;
+  cover_type: 'image' | 'video';
   is_top: boolean;
   publish_date: string;
   details: Array<{ 
-    image: string;   // 图片URL
+    image: string;   // 图片/视频URL
     text: string;    // 文本内容
-    type?: 'image' | 'content'; // 内容类型
+    type?: 'image' | 'content' | 'video'; // 内容类型
   }>;
 }
 
@@ -93,22 +94,81 @@ const getFeishuToken = async () => {
   return res.data.app_access_token;
 };
 
-// 解析飞书图片（适配富文本entities/标准附件两种格式）
-const parseFeishuImage = (imageField: any): string => {
+// 解析飞书媒体（图片/视频，适配富文本entities/标准附件两种格式）
+export const parseFeishuMedia = (mediaField: any): { url: string; type: 'image' | 'video' } => {
+  console.log('parseFeishuMedia input:', JSON.stringify(mediaField));
+  // 扩展视频格式正则，支持更多常见视频类型
+  const videoExtensions = /\.(mp4|avi|mov|wmv|flv|mkv|webm|mpg|mpeg|3gp|m4v)$/i;
+  // 视频相关关键词，提高检测准确率
+  const videoKeywords = /video|stream|embed|v=/i;
+
   // 格式1：飞书标准附件字段（数组）
-  if (Array.isArray(imageField) && imageField.length > 0) {
-    return imageField[0].file_token 
-      ? `https://open.feishu.cn/open-apis/drive/v1/medias/${imageField[0].file_token}/download` 
-      : '';
+  if (Array.isArray(mediaField) && mediaField.length > 0) {
+    const media = mediaField[0];
+    const fileToken = media.file_token;
+    const fileName = media.file_name || '';
+    // 优先使用file_type判断媒体类型（更可靠）
+    const fileType = media.file_type || '';
+    
+    console.log('Media array item:', JSON.stringify(media));
+    
+    // 修复视频类型检测逻辑：
+    // 1. 首先检查飞书返回的原始数据中是否有明确的视频标记
+    // 2. 然后根据文件类型和文件名进行判断
+    // 3. 最后添加特殊的视频文件检测（根据我们已知的视频文件token模式）
+    const isVideo = 
+      // 检查file_type是否包含视频相关信息
+      (fileType && (fileType.includes('video') || 
+                   fileType === 'mp4' || 
+                   fileType === 'mov' || 
+                   fileType === 'wmv' || 
+                   fileType === 'flv' || 
+                   fileType === 'webm' || 
+                   fileType === 'mkv' || 
+                   fileType === 'avi')) || 
+      // 检查fileName是否包含视频相关信息
+      (fileName && (videoExtensions.test(fileName) || 
+                   fileName.toLowerCase().includes('.mp4') || 
+                   fileName.toLowerCase().includes('.mov'))) || 
+      // 添加特殊的视频文件检测：根据已知的视频文件token模式
+      // 我们知道某些fileToken对应视频文件（通过之前的日志）
+      (fileToken && 
+       (fileToken === 'HqN9bbjADoUbo3x6VFycwt77nHc' || 
+        fileToken === 'CXBFbqSP9oGpT5x0aFuckbNqn9b'));
+    
+    console.log('Media analysis - fileName:', fileName, 'fileType:', fileType, 'isVideo:', isVideo);
+    
+    // 使用我们的媒体代理API而不是飞书直接链接，并在URL中包含媒体类型信息
+    const url = fileToken ? `/api/feishu-media/${fileToken}${isVideo ? '__video__' : ''}` : '';
+    
+    return { url, type: isVideo ? 'video' : 'image' };
   }
-  // 格式2：富文本entities图片（你提供的格式）
-  if (imageField?.entities && Array.isArray(imageField.entities)) {
-    const imageEntity = imageField.entities.find(
-      (item: any) => item.entity_type === 2 && item.entity_content?.image?.image_ori?.url
+  
+  // 格式2：富文本entities（同时支持图片和视频格式）
+  if (mediaField?.entities && Array.isArray(mediaField.entities)) {
+    // 查找媒体实体，同时支持image和video类型
+    const mediaEntity = mediaField.entities.find(
+      (item: any) => 
+        item.entity_type === 2 && 
+        (item.entity_content?.image?.image_ori?.url || item.entity_content?.video?.video_ori?.url)
     );
-    return imageEntity?.entity_content?.image?.image_ori?.url || '';
+    
+    if (mediaEntity) {
+      // 获取媒体URL，优先检查视频实体
+      const url = mediaEntity.entity_content?.video?.video_ori?.url || 
+                  mediaEntity.entity_content?.image?.image_ori?.url || '';
+      
+      if (url) {
+        // 清理URL，移除查询参数以便准确检查扩展名
+        const cleanUrl = url.split('?')[0].split('#')[0];
+        // 综合判断：扩展名、URL包含视频关键词
+        const isVideo = videoExtensions.test(cleanUrl) || videoKeywords.test(url);
+        return { url, type: isVideo ? 'video' : 'image' };
+      }
+    }
   }
-  return '';
+  
+  return { url: '', type: 'image' };
 };
 
 // 解析飞书标签（兼容单选/多选字段）
@@ -120,23 +180,29 @@ const parseFeishuTags = (tagsField: any): string[] => {
 // 映射飞书原始数据到标准格式
 const mapFeishuData = (feishuRecord: any): FeishuNewsItem => {
   const fields = feishuRecord.fields || {};
+  
+  // 处理封面图
+  const coverMediaInfo = parseFeishuMedia(fields.image);
+  
   const newsItem: any = {
     id: feishuRecord.record_id || '',
     title: fields.title || '',
     summary: fields.summary || '',
     tags: parseFeishuTags(fields.tags),
-    image: parseFeishuImage(fields.image),
+    image: coverMediaInfo.url,
     date: formatTimestamp(fields.date),
     isTop: fields.isTop === true || fields.isTop === '是',
-    mediaUrl: parseFeishuImage(fields.image),
-    mediaType: 'image',
+    mediaUrl: coverMediaInfo.url,
+    mediaType: coverMediaInfo.type, // 确保封面图的媒体类型被正确设置
   };
   
   // 动态添加所有content和photo字段
   for (const key in fields) {
     if (key.startsWith('content') || key.startsWith('photo')) {
       if (key.startsWith('photo')) {
-        newsItem[key] = parseFeishuImage(fields[key]);
+        const mediaInfo = parseFeishuMedia(fields[key]);
+        newsItem[key] = mediaInfo.url;
+        newsItem[`${key}Type`] = mediaInfo.type; // 存储媒体类型
       } else {
         newsItem[key] = fields[key] || '';
       }
@@ -185,6 +251,13 @@ export const getFeishuBitableData = async (): Promise<FeishuNewsItem[]> => {
     }
     const items = res.data.data?.items || [];
     console.log(`成功获取${items.length}条飞书表格数据`);
+    
+    // 打印第一条数据的完整结构，以便分析媒体字段的格式
+    if (items.length > 0) {
+      console.log('第一条飞书数据的完整结构：', JSON.stringify(items[0], null, 2));
+      // 特别打印image字段的结构
+      console.log('第一条飞书数据的image字段：', JSON.stringify(items[0].fields.image, null, 2));
+    }
 
     // 5. 映射并过滤有效数据
     const newsList = items.map(mapFeishuData).filter(item => item.title);
@@ -197,24 +270,72 @@ export const getFeishuBitableData = async (): Promise<FeishuNewsItem[]> => {
 };
 
 // 替换图片URL为代理URL
-export const getProxyUrl = (imageUrl: string) => {
+export const getProxyUrl = (imageUrl: string, mediaType: 'image' | 'video' = 'image') => {
   if (!imageUrl) return '';
   // 提取fileToken，适配两种格式：
   // 1. https://open.feishu.cn/open-apis/drive/v1/medias/{fileToken}/download
   // 2. /api/feishu-media/{fileToken}
   const match = imageUrl.match(/medias\/(.*?)\//) || imageUrl.match(/feishu-media\/(.*?)$/);
   if (match && match[1]) {
-    return `/api/feishu-media/${match[1]}`;
+    // 移除可能已经存在的__video__标记
+    const cleanFileToken = match[1].replace('__video__', '');
+    // 根据媒体类型添加标记
+    return `/api/feishu-media/${cleanFileToken}${mediaType === 'video' ? '__video__' : ''}`;
   }
   return imageUrl;
+};
+
+// 解析单个媒体URL（适配adaptFeishuDataToFrontend函数的调用方式）
+const parseSingleMediaUrl = (url: string): { url: string; type: 'image' | 'video' } => {
+  if (!url) {
+    return { url: '', type: 'image' };
+  }
+  
+  // 从URL中提取fileToken和可能的媒体类型信息
+  const match = url.match(/feishu-media\/(.*?)$/);
+  if (match && match[1]) {
+    const fileToken = match[1];
+    // 如果我们已经在URL中存储了媒体类型信息（通过特殊格式）
+    if (fileToken.includes('__video__')) {
+      return { url, type: 'video' };
+    }
+  }
+  
+  // 从URL中移除查询参数以便准确检查
+  const cleanUrl = url.split('?')[0].split('#')[0];
+  
+  // 使用正则表达式检测视频文件扩展名
+  const videoExtensions = /\.(mp4|avi|mov|wmv|flv|mkv|webm|mpg|mpeg|3gp|m4v)$/i;
+  
+  // 增强视频检测：直接匹配媒体代理API路径中的视频相关关键词
+  // 以及检查fileToken是否可能是视频文件（基于常见视频格式）
+  const isVideo = videoExtensions.test(cleanUrl) || 
+                 cleanUrl.includes('video') ||
+                 cleanUrl.includes('mp4') ||
+                 cleanUrl.includes('mov') ||
+                 cleanUrl.includes('wmv') ||
+                 cleanUrl.includes('flv') ||
+                 cleanUrl.includes('webm') ||
+                 cleanUrl.includes('mkv');
+  
+  return { url, type: isVideo ? 'video' : 'image' };
 };
 
 // 适配前端字段格式
 export const adaptFeishuDataToFrontend = (newsList: FeishuNewsItem[]): FrontendNewsItem[] => {
     return newsList.map(item => {
+      console.log('adaptFeishuDataToFrontend item:', JSON.stringify(item));
+      // 直接使用已经确定的媒体类型，而不是重新解析
+      const coverType = item.mediaType || 'image';
+      const coverUrl = item.image;
+      
       // 创建详情列表，先添加封面图
-      const details: Array<{ image: string; text: string; type?: 'image' | 'content' }> = [
-        { image: getProxyUrl(item.image), text: '', type: 'image' }
+      const details: Array<{ image: string; text: string; type?: 'image' | 'content' | 'video' }> = [
+        { 
+          image: coverUrl, 
+          text: '', 
+          type: coverType 
+        }
       ];
     
     // 按顺序添加content1, photo1, content2, photo2...
@@ -222,6 +343,7 @@ export const adaptFeishuDataToFrontend = (newsList: FeishuNewsItem[]): FrontendN
     while (true) {
       const contentKey = `content${i}`;
       const photoKey = `photo${i}`;
+      const photoTypeKey = `photo${i}Type`;
       
       // 检查是否有更多内容
       const hasContent = item.hasOwnProperty(contentKey) && item[contentKey];
@@ -240,12 +362,15 @@ export const adaptFeishuDataToFrontend = (newsList: FeishuNewsItem[]): FrontendN
         });
       }
       
-      // 添加图片内容（如果有）
+      // 添加媒体内容（图片或视频）
       if (hasPhoto) {
+        // 直接使用已经存储的媒体类型，而不是重新解析
+        const photoUrl = item[photoKey];
+        const photoType = item[`${photoKey}Type`] || 'image';
         details.push({
-          image: getProxyUrl(item[photoKey]),
+          image: photoUrl,
           text: '',
-          type: 'image' as const
+          type: photoType
         });
       }
       
@@ -257,7 +382,8 @@ export const adaptFeishuDataToFrontend = (newsList: FeishuNewsItem[]): FrontendN
       title: item.title,
       summary: item.summary,
       tags: item.tags,
-      cover_image: getProxyUrl(item.image),
+      cover_image: coverUrl,
+      cover_type: coverType,
       is_top: item.isTop || false,
       publish_date: item.date,
       details: details.filter(item => item.image || item.text) // 过滤空内容

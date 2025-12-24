@@ -85,6 +85,9 @@
   .animate-fade-in {
     animation: fadeIn 0.3s ease-out forwards;
   }
+  .animate-scan {
+    animation: scan 2s linear infinite;
+  }
   .wechat-icon-hover {
     @apply transition-all duration-300;
   }
@@ -119,6 +122,27 @@
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #0284C7;
+}
+
+/* 动画定义 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scan {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100%);
+  }
 }
 
 /* 全局section滚动定位预留 */
