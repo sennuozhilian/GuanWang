@@ -349,7 +349,7 @@ export const adaptFeishuDataToFrontend = (newsList: FeishuNewsItem[]): FrontendN
       // 创建详情列表，不添加封面图（封面图已经作为独立字段存在）
       const details: Array<{ image: string; text: string; type?: 'image' | 'content' | 'video' }> = [];
     
-    // 按顺序添加content1, photo1, content2, photo2...
+    // 按顺序添加photo1, content1, photo2, content2...
     let i = 1;
     while (true) {
       const contentKey = `content${i}`;
@@ -362,15 +362,6 @@ export const adaptFeishuDataToFrontend = (newsList: FeishuNewsItem[]): FrontendN
       
       if (!hasContent && !hasPhoto) {
         break; // 没有更多内容，退出循环
-      }
-      
-      // 添加文本内容（如果有）
-      if (hasContent) {
-        details.push({
-          image: '',
-          text: item[contentKey],
-          type: 'content' as const
-        });
       }
       
       // 添加媒体内容（图片或视频）
@@ -405,6 +396,15 @@ export const adaptFeishuDataToFrontend = (newsList: FeishuNewsItem[]): FrontendN
             });
           }
         }
+      }
+      
+      // 添加文本内容（如果有）
+      if (hasContent) {
+        details.push({
+          image: '',
+          text: item[contentKey],
+          type: 'content' as const
+        });
       }
       
       i++;
