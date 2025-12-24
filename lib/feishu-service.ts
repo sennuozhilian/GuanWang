@@ -95,65 +95,70 @@ const getFeishuToken = async () => {
 };
 
 // 解析飞书媒体（图片/视频，适配富文本entities/标准附件两种格式）
-export const parseFeishuMedia = (mediaField: any): { url: string; type: 'image' | 'video' } => {
+export const parseFeishuMedia = (mediaField: any): Array<{ url: string; type: 'image' | 'video' }> => {
   console.log('parseFeishuMedia input:', JSON.stringify(mediaField));
   // 扩展视频格式正则，支持更多常见视频类型
   const videoExtensions = /\.(mp4|avi|mov|wmv|flv|mkv|webm|mpg|mpeg|3gp|m4v)$/i;
   // 视频相关关键词，提高检测准确率
   const videoKeywords = /video|stream|embed|v=/i;
+  
+  const mediaItems: Array<{ url: string; type: 'image' | 'video' }> = [];
 
   // 格式1：飞书标准附件字段（数组）
   if (Array.isArray(mediaField) && mediaField.length > 0) {
-    const media = mediaField[0];
-    const fileToken = media.file_token;
-    const fileName = media.file_name || '';
-    // 优先使用file_type判断媒体类型（更可靠）
-    const fileType = media.file_type || '';
-    
-    console.log('Media array item:', JSON.stringify(media));
-    
-    // 修复视频类型检测逻辑：
-    // 1. 首先检查飞书返回的原始数据中是否有明确的视频标记
-    // 2. 然后根据文件类型和文件名进行判断
-    // 3. 最后添加特殊的视频文件检测（根据我们已知的视频文件token模式）
-    const isVideo = 
-      // 检查file_type是否包含视频相关信息
-      (fileType && (fileType.includes('video') || 
-                   fileType === 'mp4' || 
-                   fileType === 'mov' || 
-                   fileType === 'wmv' || 
-                   fileType === 'flv' || 
-                   fileType === 'webm' || 
-                   fileType === 'mkv' || 
-                   fileType === 'avi')) || 
-      // 检查fileName是否包含视频相关信息
-      (fileName && (videoExtensions.test(fileName) || 
-                   fileName.toLowerCase().includes('.mp4') || 
-                   fileName.toLowerCase().includes('.mov'))) || 
-      // 添加特殊的视频文件检测：根据已知的视频文件token模式
-      // 我们知道某些fileToken对应视频文件（通过之前的日志）
-      (fileToken && 
-       (fileToken === 'HqN9bbjADoUbo3x6VFycwt77nHc' || 
-        fileToken === 'CXBFbqSP9oGpT5x0aFuckbNqn9b'));
-    
-    console.log('Media analysis - fileName:', fileName, 'fileType:', fileType, 'isVideo:', isVideo);
-    
-    // 使用我们的媒体代理API而不是飞书直接链接，并在URL中包含媒体类型信息
-    const url = fileToken ? `/api/feishu-media/${fileToken}${isVideo ? '__video__' : ''}` : '';
-    
-    return { url, type: isVideo ? 'video' : 'image' };
+    // 处理所有媒体文件，而不仅仅是第一个
+    for (const media of mediaField) {
+      const fileToken = media.file_token;
+      const fileName = media.file_name || '';
+      // 优先使用file_type判断媒体类型（更可靠）
+      const fileType = media.file_type || '';
+      
+      console.log('Media array item:', JSON.stringify(media));
+      
+      // 修复视频类型检测逻辑：
+      // 1. 首先检查飞书返回的原始数据中是否有明确的视频标记
+      // 2. 然后根据文件类型和文件名进行判断
+      // 3. 最后添加特殊的视频文件检测（根据我们已知的视频文件token模式）
+      const isVideo = 
+        // 检查file_type是否包含视频相关信息
+        (fileType && (fileType.includes('video') || 
+                     fileType === 'mp4' || 
+                     fileType === 'mov' || 
+                     fileType === 'wmv' || 
+                     fileType === 'flv' || 
+                     fileType === 'webm' || 
+                     fileType === 'mkv' || 
+                     fileType === 'avi')) || 
+        // 检查fileName是否包含视频相关信息
+        (fileName && (videoExtensions.test(fileName) || 
+                     fileName.toLowerCase().includes('.mp4') || 
+                     fileName.toLowerCase().includes('.mov'))) || 
+        // 添加特殊的视频文件检测：根据已知的视频文件token模式
+        // 我们知道某些fileToken对应视频文件（通过之前的日志）
+        (fileToken && 
+         (fileToken === 'HqN9bbjADoUbo3x6VFycwt77nHc' || 
+          fileToken === 'CXBFbqSP9oGpT5x0aFuckbNqn9b'));
+      
+      console.log('Media analysis - fileName:', fileName, 'fileType:', fileType, 'isVideo:', isVideo);
+      
+      // 使用我们的媒体代理API而不是飞书直接链接，并在URL中包含媒体类型信息
+      if (fileToken) {
+        const url = `/api/feishu-media/${fileToken}${isVideo ? '__video__' : ''}`;
+        mediaItems.push({ url, type: isVideo ? 'video' : 'image' });
+      }
+    }
   }
   
   // 格式2：富文本entities（同时支持图片和视频格式）
-  if (mediaField?.entities && Array.isArray(mediaField.entities)) {
-    // 查找媒体实体，同时支持image和video类型
-    const mediaEntity = mediaField.entities.find(
+  else if (mediaField?.entities && Array.isArray(mediaField.entities)) {
+    // 查找所有媒体实体，同时支持image和video类型
+    const mediaEntities = mediaField.entities.filter(
       (item: any) => 
         item.entity_type === 2 && 
         (item.entity_content?.image?.image_ori?.url || item.entity_content?.video?.video_ori?.url)
     );
     
-    if (mediaEntity) {
+    for (const mediaEntity of mediaEntities) {
       // 获取媒体URL，优先检查视频实体
       const url = mediaEntity.entity_content?.video?.video_ori?.url || 
                   mediaEntity.entity_content?.image?.image_ori?.url || '';
@@ -163,12 +168,13 @@ export const parseFeishuMedia = (mediaField: any): { url: string; type: 'image' 
         const cleanUrl = url.split('?')[0].split('#')[0];
         // 综合判断：扩展名、URL包含视频关键词
         const isVideo = videoExtensions.test(cleanUrl) || videoKeywords.test(url);
-        return { url, type: isVideo ? 'video' : 'image' };
+        mediaItems.push({ url, type: isVideo ? 'video' : 'image' });
       }
     }
   }
   
-  return { url: '', type: 'image' };
+  // 如果没有媒体文件，返回空数组
+  return mediaItems;
 };
 
 // 解析飞书标签（兼容单选/多选字段）
@@ -182,7 +188,8 @@ const mapFeishuData = (feishuRecord: any): FeishuNewsItem => {
   const fields = feishuRecord.fields || {};
   
   // 处理封面图
-  const coverMediaInfo = parseFeishuMedia(fields.image);
+  const coverMediaItems = parseFeishuMedia(fields.image);
+  const coverMediaInfo = coverMediaItems.length > 0 ? coverMediaItems[0] : { url: '', type: 'image' };
   
   const newsItem: any = {
     id: feishuRecord.record_id || '',
@@ -196,13 +203,23 @@ const mapFeishuData = (feishuRecord: any): FeishuNewsItem => {
     mediaType: coverMediaInfo.type, // 确保封面图的媒体类型被正确设置
   };
   
-  // 动态添加所有content和photo字段
+  // 动态添加所有content和photo字段，排除photo10
   for (const key in fields) {
-    if (key.startsWith('content') || key.startsWith('photo')) {
+    if ((key.startsWith('content') || key.startsWith('photo')) && key !== 'photo10') {
       if (key.startsWith('photo')) {
-        const mediaInfo = parseFeishuMedia(fields[key]);
-        newsItem[key] = mediaInfo.url;
-        newsItem[`${key}Type`] = mediaInfo.type; // 存储媒体类型
+        const mediaItems = parseFeishuMedia(fields[key]);
+        if (mediaItems.length > 0) {
+          // 对于封面图，我们只保存第一个媒体作为主要封面
+          // 对于正文图片，我们需要保存所有媒体
+          if (key === 'image') {
+            newsItem[key] = mediaItems[0].url;
+            newsItem[`${key}Type`] = mediaItems[0].type;
+          } else {
+            // 保存所有媒体URL，用数组存储
+            newsItem[key] = mediaItems.map(item => item.url);
+            newsItem[`${key}Type`] = mediaItems.map(item => item.type);
+          }
+        }
       } else {
         newsItem[key] = fields[key] || '';
       }
@@ -329,14 +346,8 @@ export const adaptFeishuDataToFrontend = (newsList: FeishuNewsItem[]): FrontendN
       const coverType = item.mediaType || 'image';
       const coverUrl = item.image;
       
-      // 创建详情列表，先添加封面图
-      const details: Array<{ image: string; text: string; type?: 'image' | 'content' | 'video' }> = [
-        { 
-          image: coverUrl, 
-          text: '', 
-          type: coverType 
-        }
-      ];
+      // 创建详情列表，不添加封面图（封面图已经作为独立字段存在）
+      const details: Array<{ image: string; text: string; type?: 'image' | 'content' | 'video' }> = [];
     
     // 按顺序添加content1, photo1, content2, photo2...
     let i = 1;
@@ -367,11 +378,33 @@ export const adaptFeishuDataToFrontend = (newsList: FeishuNewsItem[]): FrontendN
         // 直接使用已经存储的媒体类型，而不是重新解析
         const photoUrl = item[photoKey];
         const photoType = item[`${photoKey}Type`] || 'image';
-        details.push({
-          image: photoUrl,
-          text: '',
-          type: photoType
-        });
+        
+        // 处理多个媒体文件的情况
+        if (Array.isArray(photoUrl) && Array.isArray(photoType)) {
+          // 遍历所有媒体文件
+          for (let j = 0; j < photoUrl.length; j++) {
+            if (photoUrl[j]) {
+              // 检查是否与封面图片重复，如果重复则跳过
+              if (photoUrl[j] !== coverUrl) {
+                details.push({
+                  image: photoUrl[j],
+                  text: '',
+                  type: photoType[j] || 'image'
+                });
+              }
+            }
+          }
+        } else {
+          // 处理单个媒体文件的情况（向后兼容）
+          // 检查是否与封面图片重复，如果重复则跳过
+          if (photoUrl !== coverUrl) {
+            details.push({
+              image: photoUrl,
+              text: '',
+              type: photoType
+            });
+          }
+        }
       }
       
       i++;
