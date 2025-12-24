@@ -14,7 +14,7 @@ import LoadingAnimation from './LoadingAnimation'; // 导入科技感加载动�
 interface NewsDetailItem {
   image: string; 
   text: string; 
-  type?: 'image' | 'content' | 'video';
+  type?: 'image' | 'content' | 'video' | '视频' | '图片';
 }
 
 // 模糊占位符base64（优化图片加载体验）
@@ -693,8 +693,8 @@ export default function NewsPage({ initialNewsData }: NewsPageProps) {
                                 <LoadingAnimation size="lg" color="cyan-500" />
                               </div>
                             )}
-                            {/* 根据媒体类型显示视频或图片 */}
-                            {detail.type === 'video' ? (
+                            {/* 根据媒体类型显示视频或图片，支持中英文类型值 */}
+                            {(detail.type === 'video' || detail.type === '视频') ? (
                               <video
                                 src={detail.image}
                                 controls
@@ -710,7 +710,7 @@ export default function NewsPage({ initialNewsData }: NewsPageProps) {
                               >
                                 您的浏览器不支持视频播放。
                               </video>
-                            ) : detail.type === 'image' ? (
+                            ) : (detail.type === 'image' || detail.type === '图片') ? (
                               <Image
                                 src={detail.image}
                                 alt={`详情图片${idx+1}`}
