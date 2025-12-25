@@ -46,8 +46,14 @@ export default function ContactForm() {
 
   // 提交到飞书
   const submitToFeishu = async () => {
-    // 飞书机器人Webhook地址（替换为你的实际地址）
-    const FEISHU_WEBHOOK = 'https://open.feishu.cn/open-apis/bot/v2/hook/4942f0bb-43ec-403a-8602-e0f64c402695';
+    // 从环境变量获取飞书机器人Webhook地址
+    const FEISHU_WEBHOOK = process.env.NEXT_PUBLIC_FEISHU_WEBHOOK;
+    
+    // 检查环境变量是否已配置
+    if (!FEISHU_WEBHOOK) {
+      console.error('飞书机器人Webhook地址未配置，请在.env.local文件中设置NEXT_PUBLIC_FEISHU_WEBHOOK');
+      return false;
+    }
     
     // 构造飞书消息格式（卡片形式）
     const feishuMessage = {
