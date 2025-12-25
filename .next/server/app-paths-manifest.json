@@ -1,7 +1,8 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
-  "/api/feishu-media/[fileToken]/route": "app/api/feishu-media/[fileToken]/route.js",
-  "/news/page": "app/news/page.js",
   "/page": "app/page.js",
+  "/news/page": "app/news/page.js",
+  "/api/feishu-media/[fileToken]/route": "app/api/feishu-media/[fileToken]/route.js",
+  "/api/test-data/route": "app/api/test-data/route.js",
   "/api/news/route": "app/api/news/route.js"
 }
