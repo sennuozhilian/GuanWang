@@ -4,29 +4,11 @@ import Image from 'next/image';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMapMarker, faPhone, faEnvelope, faClock, faCommentDots } from '@fortawesome/free-solid-svg-icons';
 import ContactForm from './ContactForm';
-import LoadingAnimation from './LoadingAnimation';
 import { validatePhone, validateEmail } from '../../lib/utils';
 
 export default function Contact() {
   const contactRef = useRef<HTMLDivElement>(null);
   const [showQrcode, setShowQrcode] = useState(false);
-  const [mediaLoading, setMediaLoading] = useState<Record<string, boolean>>({});
-
-  // 媒体加载状态管理
-  const startMediaLoading = (mediaUrl: string) => {
-    setMediaLoading(prev => ({ ...prev, [mediaUrl]: true }));
-  };
-
-  const handleMediaLoad = (mediaUrl: string) => {
-    setMediaLoading(prev => ({ ...prev, [mediaUrl]: false }));
-  };
-
-  // 当显示二维码时，重置二维码图片的加载状态
-  useEffect(() => {
-    if (showQrcode) {
-      startMediaLoading('/images/weixin.png');
-    }
-  }, [showQrcode]);
 
   // 滚动动画监听
   useEffect(() => {
@@ -191,12 +173,6 @@ export default function Contact() {
                       <div className="qrcode-border relative p-4 bg-gray-900/80 backdrop-blur-sm border border-cyan-500/20 rounded-xl shadow-[0_0_30px_rgba(0,255,255,0.1)]">
                         {/* 图片容器优化 - 确保图片完全居中 */}
                         <div className="w-56 h-56 mx-auto flex items-center justify-center relative">
-                          {/* 二维码加载动画 */}
-                          {mediaLoading['/images/weixin.png'] && (
-                            <div className="absolute inset-0 bg-dark/80 flex items-center justify-center z-10">
-                              <LoadingAnimation size="md" color="cyan-500" />
-                            </div>
-                          )}
                           <Image 
                             src="/images/weixin.png" 
                             alt="微信二维码" 
@@ -204,9 +180,6 @@ export default function Contact() {
                             sizes="224px"
                             className="object-contain" // 保持图片比例，完全显示
                             style={{ maxWidth: '100%', maxHeight: '100%' }}
-                            onLoadStart={() => startMediaLoading('/images/weixin.png')}
-                            onLoad={() => handleMediaLoad('/images/weixin.png')}
-                            onError={() => handleMediaLoad('/images/weixin.png')}
                           />
                         </div>
                       </div>
